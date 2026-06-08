@@ -1,0 +1,19 @@
+{
+  "name": "critbot-live-capture",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Local mic → Deepgram streaming (diarized) → Critbot Screen 1.",
+  "scripts": {
+    "start": "node relay.js",
+    "start:local": "node relay-local.js",
+    "test": "node test-parse.js",
+    "eval": "node ../fixtures/generator/eval.js",
+    "eval:llm": "node ../fixtures/generator/eval-llm.js",
+    "eval:coach": "node ../fixtures/generator/coach-eval.js",
+    "eval:record": "node ../fixtures/generator/record-eval.js",
+    "eval:relationships": "node ../fixtures/generator/relationship-eval.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

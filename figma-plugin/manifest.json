@@ -1,0 +1,13 @@
+{
+  "name": "Critbot — Crit Review",
+  "id": "critbot-crit-review",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"],
+    "reasoning": "v1 skeleton runs fully offline on synthetic data. Add the backend domain here when the crit-record fetch is wired up."
+  }
+}

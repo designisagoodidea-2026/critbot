@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Critbot — Roster & Relationship Policy</title>
+<style>
+  :root { font-family: Inter, -apple-system, system-ui, sans-serif; }
+  body { margin: 0; background: #0f1115; color: #e8eaed; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 22px; }
+  a { color: #6aa3f0; text-decoration: none; }
+  header { display: flex; align-items: baseline; justify-content: space-between; }
+  h1 { font-size: 19px; margin: 0; }
+  .sub { font-size: 12px; color: #8b93a3; margin: 6px 0 20px; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #8b93a3; margin: 24px 0 10px; }
+  .panel { background: #161922; border: 1px solid #232838; border-radius: 12px; padding: 16px; }
+  select, button, input { font: inherit; font-size: 13px; border-radius: 8px; border: 1px solid #2a2f3a; background: #1a1d24; color: #e8eaed; padding: 7px 10px; }
+  button { cursor: pointer; } button.primary { background: #6aa3f0; border-color: #6aa3f0; color: #0f1115; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid #1c2130; font-size: 13px; vertical-align: middle; }
+  th { color: #8b93a3; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  td input { width: 96%; } .namec input { font-weight: 600; }
+  .muted { color: #6f7787; font-size: 12px; }
+  .row-actions a { color: #8b93a3; cursor: pointer; font-size: 12px; }
+  .policy-card { font-size: 13px; color: #c7ccd6; line-height: 1.5; margin-top: 10px; }
+  .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  .ok { color: #46c08a; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Roster &amp; Relationship Policy</h1><a href="/live/">← Live Critique</a></header>
+  <div class="sub">Who's in the room, their standing, and the lens for interpreting feedback by relationship. Manual now; a Microsoft Graph / Workday provider can populate this later. Stays on your machine, per-team.</div>
+
+  <h2>Participants</h2>
+  <div class="panel">
+    <table id="ptable">
+      <tr><th>Presenter</th><th>Name</th><th>Role</th><th>Authority</th><th>Expertise (comma-sep)</th><th></th></tr>
+    </table>
+    <div class="bar">
+      <button onclick="addParticipant()">+ Add participant</button>
+      <button onclick="seedFromCalendar()">Seed from calendar invitees</button>
+    </div>
+  </div>
+
+  <h2>Relationship policy (the second lens)</h2>
+  <div class="panel">
+    <select id="policy" onchange="renderPolicy()"></select>
+    <div class="policy-card" id="policyCard"></div>
+  </div>
+
+  <div class="bar">
+    <button class="primary" onclick="saveRoster()">Save roster &amp; policy</button>
+    <span class="ok" id="saved"></span>
+  </div>
+  <div class="sub" style="margin-top:18px">Authority drives <em>relationship to the presenter</em> (above / peer / below), which the policy turns into weighting, decision-promotion, and protective flags on the exported crit record. Authority weighting is a real, expected dynamic — and the policies still flag strong junior points so seniority can't quietly drown them out.</div>
+</div>
+
+<script>
+const AUTH = [[1,"Designer (IC)"],[2,"Senior"],[3,"Lead / Manager"],[4,"Director+"]];
+let roster = { participants: [], presenterId: null, policyId: null };
+let policies = [];
+const $ = (id) => document.getElementById(id);
+const uid = () => "p" + Math.random().toString(36).slice(2, 7);
+
+async function init() {
+  policies = (await fetch("/api/policies").then(r => r.json())).policies || [];
+  $("policy").innerHTML = policies.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+  const saved = (await fetch("/api/roster").then(r => r.json())).roster;
+  if (saved && (saved.participants || []).length) roster = saved;
+  if (roster.policyId) $("policy").value = roster.policyId;
+  if (!roster.participants.length) addParticipant();
+  renderParticipants(); renderPolicy();
+}
+function renderParticipants() {
+  const t = $("ptable");
+  t.querySelectorAll(".prow").forEach(r => r.remove());
+  roster.participants.forEach((p) => {
+    const tr = document.createElement("tr"); tr.className = "prow";
+    tr.innerHTML =
+      `<td><input type="radio" name="presenter" ${roster.presenterId === p.id ? "checked" : ""} onchange="setPresenter('${p.id}')"></td>` +
+      `<td class="namec"><input value="${p.name || ""}" oninput="upd('${p.id}','name',this.value)"></td>` +
+      `<td><input value="${p.role || ""}" oninput="upd('${p.id}','role',this.value)" placeholder="title"></td>` +
+      `<td><select onchange="upd('${p.id}','authority',+this.value)">${AUTH.map(a => `<option value="${a[0]}" ${p.authority === a[0] ? "selected" : ""}>${a[1]}</option>`).join("")}</select></td>` +
+      `<td><input value="${(p.expertise || []).join(", ")}" oninput="updExp('${p.id}',this.value)" placeholder="e.g. accessibility, motion"></td>` +
+      `<td class="row-actions"><a onclick="removeP('${p.id}')">remove</a></td>`;
+    t.appendChild(tr);
+  });
+}
+function addParticipant() { roster.participants.push({ id: uid(), name: "", role: "", authority: 1, expertise: [] }); renderParticipants(); }
+function removeP(id) { roster.participants = roster.participants.filter(p => p.id !== id); if (roster.presenterId === id) roster.presenterId = null; renderParticipants(); }
+function upd(id, k, v) { const p = roster.participants.find(x => x.id === id); if (p) p[k] = v; }
+function updExp(id, v) { const p = roster.participants.find(x => x.id === id); if (p) p.expertise = v.split(",").map(s => s.trim()).filter(Boolean); }
+function setPresenter(id) { roster.presenterId = id; }
+async function seedFromCalendar() {
+  const crits = (await fetch("/api/events").then(r => r.json())).crits || [];
+  const live = crits.find(e => e.status === "live") || crits[0];
+  if (!live) { $("saved").textContent = "no calendar crit to seed from"; return; }
+  (live.attendees || []).forEach(a => {
+    const name = (a && (a.name || a.email)) || String(a);
+    if (!roster.participants.some(p => p.name === name)) roster.participants.push({ id: uid(), name, role: "", authority: 1, expertise: [] });
+  });
+  renderParticipants();
+}
+function renderPolicy() {
+  const p = policies.find(x => x.id === $("policy").value);
+  $("policyCard").textContent = p ? p.description : "";
+}
+async function saveRoster() {
+  roster.policyId = $("policy").value;
+  const r = await fetch("/api/roster", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(roster) }).then(r => r.json()).catch(() => ({}));
+  $("saved").textContent = r && r.ok ? "Saved — exports now apply this lens." : "save failed";
+}
+init();
+</script>
+</body>
+</html>

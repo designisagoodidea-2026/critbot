@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://critbot/rubric-library.schema.json",
+  "title": "Critbot rubric library",
+  "description": "A critique rubric library — the lens the Screen 1 classifier, coach, and scorer use. This is the moat: DesignOps expertise expressed as configurable product.",
+  "type": "object",
+  "required": ["id", "name", "domain", "description", "guidelines", "scoring", "coachingCues"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$", "description": "kebab-case stable id" },
+    "name": { "type": "string", "description": "display name, e.g. 'UX Product Design'" },
+    "domain": { "type": "string", "description": "the tag shown on the card, e.g. 'Product', 'Marketing', 'Business Strategy'" },
+    "description": { "type": "string", "description": "one line, e.g. 'Evidence-based usability critiques'" },
+    "status": { "type": "string", "enum": ["active", "stub"], "default": "active", "description": "'stub' = listed under Other Libraries, guidelines not yet authored" },
+    "classificationTaxonomy": {
+      "type": "array",
+      "description": "utterance classes the Screen 1 classifier emits. Shared default; a library may override.",
+      "items": { "type": "string", "enum": ["approval", "suggestion", "concern", "question", "statement"] },
+      "default": ["approval", "suggestion", "concern", "question", "statement"]
+    },
+    "guidelines": {
+      "type": "array",
+      "description": "what a good crit looks like through this lens. Shown on the Screen 2 card.",
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "label": { "type": "string", "description": "e.g. 'Reference user research data'" },
+          "detail": { "type": "string", "description": "optional expansion for the coach/scorer" }
+        }
+      }
+    },
+    "scoring": {
+      "type": "array",
+      "description": "the crit-quality scorecard dimensions evaluated live on Screen 1.",
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "label": { "type": "string", "description": "e.g. 'Design intent stated'" },
+          "description": { "type": "string", "description": "what the scorer is checking for" }
+        }
+      }
+    },
+    "coachingCues": {
+      "type": "array",
+      "description": "real-time nudges the coach can surface when a trigger condition is detected.",
+      "items": {
+        "type": "object",
+        "required": ["trigger", "nudge"],
+        "additionalProperties": false,
+        "properties": {
+          "trigger": { "type": "string", "description": "machine condition, e.g. 'no-design-intent-stated', 'unsupported-claim'" },
+          "nudge": { "type": "string", "description": "the message shown, e.g. 'Remind presenter to state design intent'" },
+          "kind": { "type": "string", "enum": ["reminder", "suggestion", "question"], "default": "suggestion" }
+        }
+      }
+    }
+  }
+}

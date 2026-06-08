@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://critbot/relationship-policy.schema.json",
+  "title": "Critbot relationship/interpretation policy",
+  "description": "The second configurable lens (alongside rubric libraries): how a speaker's standing relative to the presenter modifies the interpretation of what they said. A policy maps (relationship-to-presenter × classification) → a treatment (weight, decision-promotion, protective flags). Swappable + user-definable; ship templates.",
+  "type": "object",
+  "required": ["id", "name", "description", "basis", "weights"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "basis": { "type": "string", "enum": ["authority", "expertise", "flat"], "description": "what primarily drives weight" },
+    "weights": {
+      "type": "object",
+      "description": "multiplier applied by the speaker's relationship to the presenter",
+      "additionalProperties": false,
+      "properties": {
+        "above": { "type": "number" },
+        "peer": { "type": "number" },
+        "below": { "type": "number" },
+        "unknown": { "type": "number" }
+      }
+    },
+    "expertiseBoost": { "type": "number", "default": 0, "description": "added when the speaker's expertise matches the item's rubricTag/topic" },
+    "promoteToDecision": {
+      "type": "array",
+      "description": "relationships whose directives (suggestion/concern) are recorded as decisions",
+      "items": { "type": "string", "enum": ["above", "peer", "below"] }
+    },
+    "balancing": { "type": "boolean", "default": true, "description": "emit protective flags (e.g., a strong below-authority point at risk of being dropped)" }
+  }
+}

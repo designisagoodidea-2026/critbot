@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Critbot — Live Critique</title>
+<style>
+  :root { font-family: Inter, -apple-system, system-ui, sans-serif; color: #1a1a1a; }
+  body { margin: 0; background: #0f1115; color: #e8eaed; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 20px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  h1 { font-size: 18px; margin: 0; }
+  .controls { display: flex; gap: 10px; align-items: center; }
+  select, button { font: inherit; font-size: 13px; border-radius: 8px; border: 1px solid #2a2f3a; background: #1a1d24; color: #e8eaed; padding: 8px 12px; }
+  button.rec { background: #e5484d; border-color: #e5484d; color: #fff; cursor: pointer; font-weight: 600; }
+  button.rec.on { background: #1a1d24; border-color: #e5484d; color: #e5484d; }
+  .status { font-size: 12px; color: #8b93a3; }
+  .panel { background: #161922; border: 1px solid #232838; border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+  .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #8b93a3; margin: 0 0 10px; }
+  .score { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .score .cell { background: #1a1d24; border: 1px solid #232838; border-radius: 8px; padding: 8px; font-size: 12px; }
+  .cell .lbl { color: #c7ccd6; } .cell .note { color: #6f7787; font-size: 11px; margin-top: 4px; }
+  .cell.met { border-color: #2e7d57; } .cell.met .dot { color: #46c08a; } .cell .dot { color: #6f7787; }
+  #transcript { max-height: 300px; overflow-y: auto; padding-right: 4px; }
+  .utt { padding: 8px 0; border-bottom: 1px solid #1c2130; }
+  .utt .meta { font-size: 11px; color: #8b93a3; margin-bottom: 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .editlink { font-size: 10px; color: #6f7787; cursor: pointer; }
+  .editlink:hover { color: #9aa3b2; }
+  .edited { font-size: 9px; color: #46c08a; text-transform: uppercase; letter-spacing: .05em; }
+  .x { cursor: pointer; color: #8b93a3; }
+  .tagin, .whyin { font-size: 11px; padding: 2px 6px; border-radius: 5px; border: 1px solid #2a2f3a; background: #1a1d24; color: #e8eaed; }
+  .tagin { width: 120px; } .whyin { width: 230px; }
+  .mini { font-size: 11px; padding: 2px 8px; border-radius: 5px; border: 1px solid #2e7d57; background: #18372b; color: #46c08a; cursor: pointer; }
+  .mini-link { font-size: 11px; color: #8b93a3; cursor: pointer; }
+  .speakers { font-size: 11px; color: #8b93a3; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+  .spkchip { display: inline-flex; align-items: center; gap: 5px; }
+  .consent { font-size: 11px; color: #6f7787; margin: 2px 0 14px; }
+  .upcoming { font-size: 12px; color: #c7ccd6; background: #161922; border: 1px solid #232838; border-radius: 10px; padding: 10px 13px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .upcoming .live { color: #46c08a; font-weight: 600; }
+  .upcoming .soon { color: #8b93a3; }
+  .upcoming label { display: inline-flex; align-items: center; gap: 5px; color: #8b93a3; }
+  .joinbtn { font-size: 11px; padding: 3px 10px; border-radius: 6px; border: 1px solid #6aa3f0; background: #1b2c46; color: #6aa3f0; cursor: pointer; }
+  .utt .text { font-size: 14px; line-height: 1.4; }
+  .chip { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: #232838; color: #c7ccd6; }
+  .chip.approval { background: #18372b; color: #46c08a; }
+  .chip.suggestion { background: #1b2c46; color: #6aa3f0; }
+  .chip.concern { background: #3a2a18; color: #e0a356; }
+  .chip.question { background: #2a2342; color: #b18cf0; }
+  .chip.pending { background: #20242e; color: #6f7787; }
+  .spk { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .ovl { font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: #8b93a3; border: 1px solid #2a2f3a; border-radius: 3px; padding: 1px 4px; }
+  .interim { color: #8b93a3; font-style: italic; min-height: 18px; margin-bottom: 6px; }
+  /* coaching cards — readable, prioritized, severity-accented */
+  .coach .card { display: flex; align-items: flex-start; gap: 10px; background: #1a1d24; border: 1px solid #232838; border-left: 3px solid #6f7787; border-radius: 8px; padding: 11px 13px; margin-bottom: 9px; }
+  .coach .card.high { border-left-color: #e0a356; }
+  .coach .card.med  { border-left-color: #6aa3f0; }
+  .coach .card.low  { border-left-color: #46c08a; }
+  .coach .k { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: #8b93a3; margin-bottom: 4px; }
+  .coach .n { font-size: 14px; line-height: 1.5; color: #eef0f3; }
+  .coach .count { margin-left: auto; font-size: 11px; color: #8b93a3; white-space: nowrap; }
+  .empty { color: #6f7787; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>Live Critique</h1><div class="status" id="status">idle — press Start and grant mic access</div></div>
+    <div class="controls">
+      <label class="status">Library:
+        <select id="library">
+          <option value="ux-product-design">UX Product Design</option>
+          <option value="marketing-design">Marketing Design</option>
+          <option value="hbr-strategy">HBR-Inspired</option>
+        </select>
+      </label>
+      <a href="/live/libraries.html" class="status" style="color:#6aa3f0;text-decoration:none">Libraries →</a>
+      <a href="/live/roster.html" class="status" style="color:#6aa3f0;text-decoration:none">Roster →</a>
+      <button id="export">Export</button>
+      <button id="rec" class="rec">● Start</button>
+    </div>
+  </header>
+  <div class="consent">Critbot captures your microphone while recording — make sure participants consent before you start.</div>
+  <div id="upcoming" class="upcoming"></div>
+
+  <div class="panel">
+    <h2>Critique Quality</h2>
+    <div class="score" id="score"><div class="empty">Scorecard updates as the crit unfolds.</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Live Transcript <span class="chip" id="brain">…</span> <span class="status" id="diar"></span></h2>
+    <div id="speakers" class="speakers"></div>
+    <div id="transcript"><div class="empty">No speech yet.</div></div>
+    <div class="interim" id="interim"></div>
+  </div>
+
+  <div class="panel coach">
+    <h2>Coaching</h2>
+    <div id="coach"><div class="empty">Nudges appear here.</div></div>
+  </div>
+</div>
+
+<script src="/engine/classifyScoreCoach.js?v=4"></script>
+<script src="/engine/coach.js?v=4"></script>
+<script>
+/* ═══════════ INLINED PARSER · Deepgram message → utterances ═══════════ */
+// dgToUtterances — INLINED (was an external file that kept loading stale from
+// browser cache). Turns a Deepgram Results message into Screen 1 utterances:
+// uses the transcript string for text, words[] for speaker diarization.
+function dgFmt(s){ s=Math.floor(s||0); var m=Math.floor(s/60); return m+":"+String(s%60).padStart(2,"0"); }
+function resultToUtterances(dgResult, speakerName){
+  var alt = dgResult && dgResult.channel && dgResult.channel.alternatives && dgResult.channel.alternatives[0];
+  var words = (alt && alt.words) || [];
+  var transcript = (alt && alt.transcript) || "";
+  var name = speakerName || function(n){ return "Speaker " + (n==null?"?":n); };
+  var baseStart = (dgResult && typeof dgResult.start === "number") ? dgResult.start : ((words[0] && words[0].start) || 0);
+  var utterances = [];
+  if (words.length) {
+    var cur = null;
+    for (var i=0;i<words.length;i++){ var w=words[i];
+      var spk = w.speaker==null?0:w.speaker;
+      var token = w.punctuated_word || w.word || "";
+      if (!cur || cur.speakerId !== spk) { cur = { speakerId:spk, speaker:name(spk), t:dgFmt(w.start), tSeconds:Math.floor(w.start||0), text:token, classification:null, aiSuggestion:null }; utterances.push(cur); }
+      else { cur.text += " " + token; }
+    }
+  } else if (transcript.trim()) {
+    utterances.push({ speakerId:0, speaker:name(0), t:dgFmt(baseStart), tSeconds:Math.floor(baseStart), text:transcript.trim(), classification:null, aiSuggestion:null });
+  }
+  return { isFinal: !!(dgResult && dgResult.is_final), speechFinal: !!(dgResult && dgResult.speech_final), utterances: utterances };
+}
+
+/* ═══════════ STATE & HELPERS ═══════════ */
+const SPEAKER_COLORS = ["#46c08a", "#6aa3f0", "#e0a356", "#b18cf0", "#e5848a"];
+let library = null, libraryId = null, ws = null, audioCtx = null, processor = null, source = null, stream = null;
+let finals = [];           // accumulated final utterances
+let speakerNames = {};     // {0:"Speaker 0"} — rename-friendly later
+let llmOn = false;         // set from /api/health — real brain vs heuristic
+let llmScore = null;       // latest LLM scorecard+coaching (when llmOn)
+let analyzing = false, analyzeQueued = false;
+let lastView = [], lastScorecard = [], lastCoaching = [], sessionStartedAt = null; // for export (M4)
+let editingIndex = -1, classificationOverrides = {}; // M4.1 tag correction
+let pending = null; // buffers Deepgram fragments into whole-sentence comments
+let editingSpeakerId = null; // M5 speaker rename
+
+const $ = (id) => document.getElementById(id);
+const setStatus = (s) => ($("status").textContent = s);
+
+/* ═══════════ LLM AVAILABILITY & RUBRIC LIBRARY (Screen 2 lens) ═══════════ */
+async function detectLLM() {
+  try { llmOn = (await (await fetch("/api/health")).json()).llm === true; } catch { llmOn = false; }
+  $("brain").textContent = llmOn ? "AI Enhanced" : "heuristic";
+  $("brain").className = "chip " + (llmOn ? "approval" : "");
+}
+detectLLM();
+
+async function loadLibrary(id) {
+  libraryId = id;
+  library = await (await fetch("/rubric-libraries/" + id + ".json")).json();
+  $("diar").textContent = "· lens: " + library.name;
+  llmScore = null;
+  rerender();
+}
+loadLibrary($("library").value);
+$("library").onchange = (e) => loadLibrary(e.target.value);
+
+/* ═══════════ SPEAKERS · naming + diarization map (M5) ═══════════ */
+function nameFor(n) { return speakerNames[n] || ("Speaker " + n); }
+
+// M5: rename speakers ("Speaker 0" → "Sarah"). Names live in speakerNames; the
+// view resolves display names from speakerId, so a rename updates every comment.
+function renderSpeakers() {
+  const bar = $("speakers"); if (!bar) return;
+  const ids = [...new Set(finals.map((u) => u.speakerId).filter((v) => v != null))];
+  if (!ids.length) { bar.innerHTML = ""; return; }
+  bar.innerHTML = ids.map((id) => {
+    const color = SPEAKER_COLORS[id % SPEAKER_COLORS.length];
+    const dot = `<span class="spk" style="background:${color}"></span>`;
+    if (editingSpeakerId === id) {
+      return `<span class="spkchip">${dot}<input id="spk-name" class="tagin" value="${nameFor(id)}"/>` +
+        ` <button class="mini" onclick="speakerDone(${id})">save</button>` +
+        ` <a class="mini-link" onclick="speakerCancel()">cancel</a></span>`;
+    }
+    return `<span class="spkchip">${dot}${nameFor(id)} <a class="editlink" onclick="speakerEdit(${id})">rename</a></span>`;
+  }).join("");
+}
+function speakerEdit(id) { editingSpeakerId = id; renderSpeakers(); const e = $("spk-name"); if (e) { e.focus(); e.select(); } }
+function speakerCancel() { editingSpeakerId = null; renderSpeakers(); }
+function speakerDone(id) {
+  const v = (($("spk-name") && $("spk-name").value) || "").trim();
+  if (v) speakerNames[id] = v;
+  editingSpeakerId = null;
+  rerender(); // re-resolves names across the whole transcript
+}
+
+// A "comment" is a whole sentence (or a speaker's turn), not a Deepgram fragment.
+// commitComment finalizes one and classifies it; flushPending closes the buffer.
+/* ═══════════ COMMENT ASSEMBLY · fragments → whole-sentence comments ═══════════ */
+function commitComment(speakerId, t, text) {
+  text = (text || "").trim(); if (!text) return;
+  // store speakerId so renaming a speaker updates every one of their comments
+  const u = { speakerId, speaker: nameFor(speakerId), t, text, classification: null, aiSuggestion: null };
+  finals.push(u);
+  rerender();
+  if (llmOn) { llmClassify(u); llmAnalyze(); }
+}
+function flushPending() {
+  if (pending && pending.text.trim()) commitComment(pending.speakerId, pending.t, pending.text);
+  pending = null;
+  const il = $("interim"); if (il) il.textContent = ""; // clear the live preview so it isn't duplicated
+}
+
+// LLM classify for one finalized utterance (mutates it); falls back silently.
+/* ═══════════ LLM CALLS · classify per comment · analyze scorecard ═══════════ */
+async function llmClassify(u) {
+  try {
+    const ctx = finals.slice(-3, -1).map((x) => x.speaker + ": " + x.text).join("\n");
+    const r = await (await fetch("/api/classify", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: u.text, context: ctx, libraryId })
+    })).json();
+    if (r && !r.fallback && r.classification) {
+      u.classification = r.classification;
+      u.trigger = r.trigger || null;   // feeds the coach (no inline per-fragment nudge)
+      u._llm = true;
+      rerender();
+    }
+  } catch (_) {}
+}
+
+// LLM scorecard+coaching over the whole transcript, throttled.
+async function llmAnalyze() {
+  if (analyzing) { analyzeQueued = true; return; }
+  analyzing = true;
+  try {
+    const r = await (await fetch("/api/analyze", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ utterances: finals, libraryId })
+    })).json();
+    if (r && !r.fallback && r.scorecard) { llmScore = r; rerender(); }
+  } catch (_) {} finally {
+    analyzing = false;
+    if (analyzeQueued) { analyzeQueued = false; llmAnalyze(); }
+  }
+}
+
+/* ═══════════ RENDER · scorecard · transcript · coaching ═══════════ */
+function rerender() {
+  if (!library) return;
+  // Heuristic engine gives an instant baseline (classification + trigger).
+  const heur = window.CritbotEngine.run({ utterances: finals }, library);
+  // View = heuristic baseline, overlaid with LLM per-utterance results when ready.
+  const view = heur.utterances.map((hu, i) => {
+    const f = finals[i];
+    let v = (llmOn && f && f._llm) ? { ...hu, classification: f.classification, trigger: f.trigger } : { ...hu };
+    if (classificationOverrides[i]) { v.classification = classificationOverrides[i]; v.corrected = true; } // M4.1
+    v.speaker = nameFor(v.speakerId != null ? v.speakerId : 0); // M5: resolve current name so renames propagate
+    return v;
+  });
+  // Scorecard: LLM analyze when available, else heuristic.
+  const scorecard = (llmOn && llmScore && llmScore.scorecard.length) ? llmScore.scorecard : heur.scorecard;
+  // Coaching: deduped + prioritized by the coach engine (NOT a nudge per fragment).
+  const coaching = window.CritbotCoach.run(view, library);
+  lastView = view; lastScorecard = scorecard; lastCoaching = coaching; // snapshot for export
+
+  // scorecard
+  const sc = $("score");
+  sc.innerHTML = scorecard.length ? "" : '<div class="empty">Scorecard updates as the crit unfolds.</div>';
+  scorecard.forEach((s) => {
+    const d = document.createElement("div");
+    d.className = "cell" + (s.met ? " met" : "");
+    d.innerHTML = `<span class="dot">${s.met ? "●" : "○"}</span> <span class="lbl">${s.label}</span><div class="note">${s.note}</div>`;
+    sc.appendChild(d);
+  });
+
+  // transcript — chronological, scrollable window auto-scrolled to the newest
+  const tr = $("transcript");
+  tr.innerHTML = view.length ? "" : '<div class="empty">No speech yet.</div>';
+  for (let i = 0; i < view.length; i++) {
+    const u = view[i];
+    const color = SPEAKER_COLORS[(finals[i] && finals[i].speakerId || 0) % SPEAKER_COLORS.length];
+    const cls = u.classification || "pending";
+    const el = document.createElement("div");
+    el.className = "utt";
+    el.innerHTML =
+      `<div class="meta"><span class="spk" style="background:${color}"></span>` +
+      `<b>${u.speaker}</b> <span>${u.t}</span> ` + chipArea(i, cls, u.corrected) +
+      (finals[i] && finals[i].overlap ? ` <span class="ovl">overlap</span>` : "") + `</div>` +
+      `<div class="text">${u.text}</div>`;
+    tr.appendChild(el);
+  }
+  if (editingIndex < 0) tr.scrollTop = tr.scrollHeight; // keep newest in view (don't yank while editing)
+  renderSpeakers();
+
+  // coaching — a few readable, prioritized cards
+  const co = $("coach");
+  co.innerHTML = coaching.length ? "" : '<div class="empty">No coaching cues yet — the room is on track.</div>';
+  coaching.forEach((c) => co.insertAdjacentHTML("beforeend",
+    `<div class="card ${c.severity}"><div class="body"><div class="k">${c.kind}</div><div class="n">${c.nudge}</div></div>` +
+    (c.count > 1 ? `<span class="count">×${c.count}</span>` : "") + `</div>`));
+}
+
+/* ═══════════ AUDIO + TRANSPORT · capture (AudioWorklet) · WebSocket · reconnect ═══════════ */
+function downsampleTo16k(float32, inRate) {
+  const ratio = inRate / 16000;
+  const outLen = Math.floor(float32.length / ratio);
+  const out = new Int16Array(outLen);
+  for (let i = 0; i < outLen; i++) {
+    const s = Math.max(-1, Math.min(1, float32[Math.floor(i * ratio)]));
+    out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+  }
+  return out;
+}
+
+let framesSent = 0, gotReady = false, workletNode = null;
+let userStopped = false, reconnectAttempts = 0;
+const MAX_RECONNECT = 6;
+
+// --- WebSocket lifecycle, with auto-reconnect on a dropped relay connection ---
+function connectWS() {
+  ws = new WebSocket("ws://" + location.host + "/ws");
+  ws.binaryType = "arraybuffer";
+  ws.onmessage = handleWsMessage;
+  ws.onopen = () => { reconnectAttempts = 0; };
+  ws.onclose = (ev) => {
+    if (on && !userStopped) scheduleReconnect();      // network blip → retry
+    else if (on) setStatus("connection closed (code " + ev.code + ")");
+  };
+  ws.onerror = () => { if (!on) setStatus("connection error — is the relay running on this port?"); };
+}
+function scheduleReconnect() {
+  if (reconnectAttempts >= MAX_RECONNECT) { setStatus("lost connection — couldn't reconnect. Press Stop, then Start."); return; }
+  reconnectAttempts++;
+  const delay = Math.min(8000, 1000 * Math.pow(2, reconnectAttempts - 1));
+  setStatus("connection dropped — reconnecting (try " + reconnectAttempts + ")…");
+  setTimeout(() => { if (on && !userStopped) connectWS(); }, delay); // mic keeps running; audio resumes when the socket reopens
+}
+
+function handleWsMessage(ev) {
+ try {
+  let msg; try { msg = JSON.parse(ev.data); } catch { return; }
+  if (msg.type === "status") {
+    if (msg.state === "ready") { gotReady = true; llmOn = !!msg.llm; detectLLM(); setStatus((reconnectAttempts ? "reconnected · " : "") + "listening… " + (llmOn ? "(AI Enhanced)" : "(heuristic)")); }
+    else setStatus("ASR error: " + (msg.message || msg.state));
+    return;
+  }
+  if (!msg.channel) return; // not a Results message
+  const grouped = resultToUtterances(msg, nameFor);
+  if (!grouped.utterances.length) return; // empty interim
+  if (grouped.isFinal) {
+    // Deepgram finalizes on acoustic pauses, not sentences. Buffer fragments,
+    // emit whole sentences (split on . ? !), and close a comment on speaker change.
+    grouped.utterances.forEach((u) => {
+      speakerNames[u.speakerId] = nameFor(u.speakerId);
+      if (pending && pending.speakerId !== u.speakerId) flushPending();
+      if (!pending) pending = { speakerId: u.speakerId, t: u.t, text: "" };
+      pending.text += (pending.text ? " " : "") + u.text;
+      let m;
+      while ((m = pending.text.match(/^([\s\S]*?[.?!]+)\s+([\s\S]*)$/))) {
+        commitComment(pending.speakerId, pending.t, m[1]);
+        pending.text = m[2]; pending.t = u.t;
+      }
+    });
+    $("interim").textContent = (pending && pending.text) ? "… " + pending.text : "";
+  } else {
+    const live = grouped.utterances.map((u) => u.text).join(" ");
+    $("interim").textContent = ((pending && pending.text) ? pending.text + " " : "") + live;
+  }
+ } catch (err) { console.error("[critbot] render error:", err); setStatus("render error: " + err.message); }
+}
+
+function sendAudio(float32, sr) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(downsampleTo16k(float32, sr).buffer);
+  if (++framesSent === 1) { console.log("[critbot] audio flowing"); setStatus("listening — mic live ✓" + (llmOn ? " · AI Enhanced" : "")); }
+}
+
+// Modern AudioWorklet capture (off the main thread), with a ScriptProcessor
+// fallback for older browsers. The worklet is loaded via a Blob URL so there's
+// no separate served file to cache.
+async function startAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  try { await audioCtx.resume(); } catch (_) {}
+  source = audioCtx.createMediaStreamSource(stream);
+  const sr = audioCtx.sampleRate;
+  try {
+    const code = `
+      class PCMWorklet extends AudioWorkletProcessor {
+        constructor(){ super(); this._buf=[]; this._n=0; }
+        process(inputs){
+          const ch = inputs[0] && inputs[0][0];
+          if (ch){ this._buf.push(ch.slice(0)); this._n += ch.length;
+            if (this._n >= 2048){ const out=new Float32Array(this._n); let o=0; for(const b of this._buf){ out.set(b,o); o+=b.length; } this._buf=[]; this._n=0; this.port.postMessage(out, [out.buffer]); } }
+          return true;
+        }
+      }
+      registerProcessor('pcm-worklet', PCMWorklet);`;
+    const url = URL.createObjectURL(new Blob([code], { type: "application/javascript" }));
+    await audioCtx.audioWorklet.addModule(url);
+    URL.revokeObjectURL(url);
+    workletNode = new AudioWorkletNode(audioCtx, "pcm-worklet");
+    workletNode.port.onmessage = (e) => sendAudio(e.data, sr);
+    source.connect(workletNode);
+    console.log("[critbot] capture: AudioWorklet @", sr, "Hz");
+  } catch (err) {
+    console.warn("[critbot] AudioWorklet unavailable — ScriptProcessor fallback", err);
+    processor = audioCtx.createScriptProcessor(4096, 1, 1);
+    processor.onaudioprocess = (e) => sendAudio(e.inputBuffer.getChannelData(0), sr);
+    source.connect(processor); processor.connect(audioCtx.destination);
+  }
+  return audioCtx.state;
+}
+
+async function start() {
+  finals = []; editingIndex = -1; classificationOverrides = {}; pending = null; speakerNames = {}; rerender();
+  framesSent = 0; gotReady = false; userStopped = false; reconnectAttempts = 0; sessionStartedAt = new Date().toISOString();
+
+  connectWS();
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    setStatus("mic blocked (" + e.name + ") — allow the microphone for localhost in the address bar");
+    throw e;
+  }
+  const state = await startAudio();
+  setStatus(state === "running" ? "connecting…" : "audio " + state + " — press Start again to enable audio");
+
+  setTimeout(() => {  // watchdog: name the failing leg
+    if (!on) return;
+    if (framesSent === 0) setStatus("no audio captured — check the OS mic input device & site mic permission");
+    else if (!gotReady) setStatus("audio is flowing but the ASR didn't acknowledge — check the Deepgram key/credits");
+  }, 5000);
+}
+
+function stop() {
+  userStopped = true; // distinguishes a real Stop from a network blip (no reconnect)
+  if (workletNode) { try { workletNode.port.onmessage = null; workletNode.disconnect(); } catch (_) {} }
+  if (processor) processor.disconnect();
+  if (source) source.disconnect();
+  if (stream) stream.getTracks().forEach((t) => t.stop());
+  if (audioCtx) audioCtx.close();
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send("stop");
+    const s = ws;
+    setTimeout(flushPending, 1200);  // commit the last sentence (incl. Deepgram's post-stop flush)
+    setTimeout(() => { if (s && s.readyState === WebSocket.OPEN) s.close(); }, 1500);
+  } else { flushPending(); }
+  setStatus("stopped");
+  processor = source = stream = audioCtx = workletNode = null;
+}
+
+/* ═══════════ TAG CORRECTION (M4.1) ═══════════ */
+// --- M4.1: tag correction. Baseline tag → edit → replace + optional rationale.
+// Corrections persist server-side and bias future classification (few-shot). ---
+function chipArea(i, cls, corrected) {
+  if (editingIndex !== i) {
+    return `<span class="chip ${cls}">${cls}</span>` +
+      (corrected ? ` <span class="edited">edited</span>` : "") +
+      ` <a class="editlink" onclick="critEdit(${i})">edit</a>`;
+  }
+  // edit mode: the suggested tag as a deletable chip + an EMPTY new-tag input
+  return `<span class="chip ${cls}" id="sugchip">${cls} <a class="x" onclick="critClearTag()" title="delete this tag">✕</a></span>` +
+    ` <input id="edit-tag" class="tagin" placeholder="new tag"/>` +
+    ` <button class="mini" onclick="critDone(${i})">done</button>` +
+    ` <a class="mini-link" onclick="critCancel()">cancel</a>` +
+    ` <input id="edit-why" class="whyin" placeholder="why this tag? (optional — improves Critbot)"/>`;
+}
+function critEdit(i) { editingIndex = i; rerender(); const e = $("edit-tag"); if (e) e.focus(); }
+function critCancel() { editingIndex = -1; rerender(); }
+// delete the suggested-tag chip in place (no rerender, so anything typed is kept)
+function critClearTag() { const c = $("sugchip"); if (c) c.remove(); const e = $("edit-tag"); if (e) e.focus(); }
+async function critDone(i) {
+  const newTag = (($("edit-tag") && $("edit-tag").value) || "").trim().toLowerCase();
+  if (!newTag) { setStatus("type a tag or cancel"); return; }
+  const why = (($("edit-why") && $("edit-why").value) || "").trim();
+  const u = lastView[i] || finals[i] || {};
+  const oldTag = (lastView[i] && lastView[i].classification) || null;
+  classificationOverrides[i] = newTag;
+  editingIndex = -1; rerender();
+  setStatus(`tag → ${newTag} · Critbot will adapt${why ? " (rationale saved)" : ""}`);
+  try {
+    await fetch("/api/correct", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: u.text, fromTag: oldTag, toTag: newTag, rationale: why, libraryId }) });
+  } catch (_) {}
+}
+
+/* ═══════════ EXPORT (M4) ═══════════ */
+// --- Export (M4): gather the session → /api/crit-record → download JSON + Markdown ---
+function downloadFile(name, content, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+async function exportCrit() {
+  if (!lastView.length) { setStatus("nothing to export yet — run a crit first"); return; }
+  setStatus("building crit record…");
+  const evt = activeEvent;
+  const payload = {
+    libraryId,
+    meta: {
+      title: evt ? evt.title : (library ? library.name : "") + " critique",
+      library: library ? library.name : null,
+      source: evt ? "calendar" : "live",
+      startedAt: sessionStartedAt, endedAt: new Date().toISOString(),
+      invited: evt ? (evt.attendees || []).map((a) => (a && (a.name || a.email)) || String(a)) : []
+    },
+    utterances: lastView.map((u) => ({ speaker: u.speaker, t: u.t, text: u.text, classification: u.classification, trigger: u.trigger || null })),
+    scorecard: lastScorecard,
+    coaching: lastCoaching
+  };
+  let r; try { r = await (await fetch("/api/crit-record", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) })).json(); } catch (e) { r = null; }
+  if (!r || !r.record) { setStatus("export failed — is the relay running?"); return; }
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+  downloadFile("critbot-record-" + stamp + ".json", JSON.stringify(r.record, null, 2), "application/json");
+  downloadFile("critbot-summary-" + stamp + ".md", r.markdown, "text/markdown");
+  setStatus("exported record.json + summary.md · " + (r.record.actionItems || []).length + " action items");
+}
+$("export").onclick = exportCrit;
+
+/* ═══════════ CALENDAR / AUTO-JOIN (M6) ═══════════ */
+// Calendar awareness: surface the live/next crit, and (opt-in) auto-arm capture
+// when a crit goes live, attaching the event's title + invited roster to the
+// session. The productized version dispatches a Recall.ai bot into the call
+// (see /api/join seam); the prototype auto-starts local capture instead.
+let autoJoin = false, activeEvent = null, joining = false, upcomingCrits = [];
+
+function fmtClock(iso) { try { return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); } catch (_) { return ""; } }
+async function fetchEvents() {
+  try { upcomingCrits = (await (await fetch("/api/events")).json()).crits || []; } catch (_) { upcomingCrits = []; }
+  renderUpcoming();
+}
+function renderUpcoming() {
+  const el = $("upcoming"); if (!el) return;
+  const live = upcomingCrits.find((e) => e.status === "live");
+  const next = upcomingCrits.find((e) => e.status === "upcoming");
+  let html = "";
+  if (live) {
+    html += `<span class="live">● Live: ${live.title}</span> <span class="soon">${(live.attendees || []).length} invited</span>`;
+    if (on && activeEvent && activeEvent.id === live.id) html += ` <span class="soon">· joined</span>`;
+    else if (!on) html += ` <button class="joinbtn" onclick="joinLive()">Join now</button>`;
+  } else if (next) {
+    html += `<span class="soon">Next crit: ${next.title} at ${fmtClock(next.start)} (in ${next.startsInMin} min)</span>`;
+  } else {
+    html += `<span class="soon">No crits on the calendar.</span>`;
+  }
+  html += ` <label><input type="checkbox" id="autojoin" ${autoJoin ? "checked" : ""} onchange="autoJoin=this.checked"> auto-join when a crit starts</label>`;
+  el.innerHTML = html;
+}
+function joinLive() { const live = upcomingCrits.find((e) => e.status === "live"); if (live) joinEvent(live); }
+function joinEvent(ev) { activeEvent = ev; joining = true; if (!on) $("rec").click(); else joining = false; }
+function checkAutoJoin() {
+  if (!autoJoin || on) return;
+  const live = upcomingCrits.find((e) => e.status === "live");
+  if (live && !(activeEvent && activeEvent.id === live.id)) joinEvent(live);
+}
+fetchEvents();
+setInterval(fetchEvents, 30000);
+setInterval(checkAutoJoin, 10000);
+
+/* ═══════════ RECORD BUTTON WIRING ═══════════ */
+let on = false;
+$("rec").onclick = async () => {
+  on = !on;
+  $("rec").classList.toggle("on", on);
+  $("rec").textContent = on ? "■ Stop" : "● Start";
+  if (on) {
+    if (!joining) activeEvent = null; // manual Start = no calendar event attached
+    joining = false;
+    try { await start(); renderUpcoming(); } catch (e) { setStatus("mic error: " + e.message); on = false; $("rec").classList.remove("on"); $("rec").textContent = "● Start"; }
+  } else { stop(); renderUpcoming(); }
+};
+</script>
+</body>
+</html>

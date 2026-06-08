@@ -1,0 +1,29 @@
+{
+  "name": "critbot-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Critbot as a Mac menubar + desktop app — the live experience packaged, relay hosted in-process.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "CRITBOT_SMOKE=1 DEEPGRAM_API_KEY=smoke electron . --no-sandbox",
+    "dist": "electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.critbot.desktop",
+    "productName": "Critbot",
+    "files": ["main.js", "package.json"],
+    "extraResources": [
+      { "from": "../live", "to": "core/live", "filter": ["**/*", "!node_modules/.cache"] },
+      { "from": "../engine", "to": "core/engine" },
+      { "from": "../rubric-libraries", "to": "core/rubric-libraries" },
+      { "from": "../relationship-policies", "to": "core/relationship-policies" }
+    ],
+    "mac": { "category": "public.app-category.productivity", "target": ["dmg"] }
+  },
+  "comment": "extraResources ships the relay + web app inside the .app. Note: packaging an in-process Node relay requires the require() paths to resolve at runtime; if a packaged build can't find ../live, point main.js at the extraResources path (process.resourcesPath + '/core/live/relay.js'). Dev (`npm start`) runs from source and needs no path tweaks."
+}

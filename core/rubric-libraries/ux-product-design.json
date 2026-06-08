@@ -1,0 +1,27 @@
+{
+  "id": "ux-product-design",
+  "name": "UX Product Design",
+  "domain": "Product",
+  "description": "Evidence-based usability critiques",
+  "status": "active",
+  "classificationTaxonomy": ["approval", "suggestion", "concern", "question", "statement"],
+  "guidelines": [
+    { "id": "design-intent", "label": "Start with design intent", "detail": "Presenter states the problem, audience, and goal before showing pixels." },
+    { "id": "user-research", "label": "Reference user research data", "detail": "Claims about user behavior are grounded in testing, analytics, or research, not opinion." },
+    { "id": "accessibility", "label": "Focus on accessibility standards", "detail": "Contrast, target size, screen-reader behavior, and WCAG conformance are considered." },
+    { "id": "hierarchy", "label": "Interrogate hierarchy and flow", "detail": "Does the layout guide attention to the primary task and CTA?" },
+    { "id": "actionability", "label": "Keep feedback actionable", "detail": "Concerns come with a concrete, testable next step." }
+  ],
+  "scoring": [
+    { "id": "design-intent-stated", "label": "Design intent stated", "description": "Did the presenter open by framing intent, audience, and goal?" },
+    { "id": "engagement", "label": "High engagement", "description": "Multiple participants contributing; not a monologue." },
+    { "id": "evidence-based", "label": "Evidence-based discussion", "description": "Feedback cites research/testing/data rather than personal taste." },
+    { "id": "actionable", "label": "Actionable feedback", "description": "Each concern resolves to a concrete next step." }
+  ],
+  "coachingCues": [
+    { "trigger": "no-design-intent-stated", "nudge": "Remind presenter to state design intent", "kind": "reminder" },
+    { "trigger": "unsupported-claim", "nudge": "Ask a clarifying question about user testing", "kind": "question" },
+    { "trigger": "taste-based-feedback", "nudge": "Reframe the preference as a testable hypothesis", "kind": "suggestion" },
+    { "trigger": "concern-without-next-step", "nudge": "Ask what concrete change would resolve the concern", "kind": "question" }
+  ]
+}

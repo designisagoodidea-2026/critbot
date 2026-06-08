@@ -1,0 +1,10 @@
+{
+  "id": "hierarchical",
+  "name": "Hierarchical (authority-weighted)",
+  "description": "Feedback from people at or above the presenter's level carries more weight, and their directives are recorded as decisions — the common, expected team dynamic. Still flags strong junior points so authority doesn't silently drown them out.",
+  "basis": "authority",
+  "weights": { "above": 1.5, "peer": 1.0, "below": 0.8, "unknown": 1.0 },
+  "expertiseBoost": 0.25,
+  "promoteToDecision": ["above"],
+  "balancing": true
+}

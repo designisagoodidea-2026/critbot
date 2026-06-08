@@ -1,0 +1,26 @@
+{
+  "id": "hbr-strategy",
+  "name": "HBR-Inspired Critique",
+  "domain": "Business Strategy",
+  "description": "Strategic business critique framework",
+  "status": "active",
+  "classificationTaxonomy": ["approval", "suggestion", "concern", "question", "statement"],
+  "guidelines": [
+    { "id": "strategic-objectives", "label": "Define clear strategic objectives", "detail": "The work ties to a stated business objective, not just a screen." },
+    { "id": "competitive-differentiation", "label": "Evaluate competitive differentiation", "detail": "How does this stand apart from alternatives in the market?" },
+    { "id": "value-proposition", "label": "Assess value proposition clarity", "detail": "The value to the customer is explicit and defensible." },
+    { "id": "tradeoffs", "label": "Surface tradeoffs explicitly", "detail": "Decisions name what is being optimized for and what is given up." },
+    { "id": "measurable-outcomes", "label": "Tie to measurable outcomes", "detail": "Success is defined by a metric, not a vibe." }
+  ],
+  "scoring": [
+    { "id": "intent-stated", "label": "Strategic intent stated", "description": "Presenter framed the business objective up front." },
+    { "id": "engagement", "label": "High engagement", "description": "Decision-makers and stakeholders actively weighing in." },
+    { "id": "evidence-based", "label": "Evidence-based discussion", "description": "Arguments cite market, financial, or competitive evidence." },
+    { "id": "actionable", "label": "Actionable feedback", "description": "Each point resolves to a decision or a defined next analysis." }
+  ],
+  "coachingCues": [
+    { "trigger": "no-strategic-objective", "nudge": "Ask which business objective this serves", "kind": "question" },
+    { "trigger": "no-tradeoff-named", "nudge": "Prompt the team to name the tradeoff being made", "kind": "reminder" },
+    { "trigger": "unsupported-claim", "nudge": "Ask for the competitive or financial evidence", "kind": "question" }
+  ]
+}

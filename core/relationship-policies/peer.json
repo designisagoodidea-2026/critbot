@@ -1,0 +1,10 @@
+{
+  "id": "peer",
+  "name": "Flat / peer critique",
+  "description": "Every voice weighed equally regardless of title; nothing is auto-promoted to a decision by rank. Strongly protective — surfaces good points from anyone so seniority can't quietly override them. Best for healthy peer crits.",
+  "basis": "flat",
+  "weights": { "above": 1.0, "peer": 1.0, "below": 1.0, "unknown": 1.0 },
+  "expertiseBoost": 0,
+  "promoteToDecision": [],
+  "balancing": true
+}

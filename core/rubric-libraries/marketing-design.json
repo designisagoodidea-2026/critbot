@@ -1,0 +1,26 @@
+{
+  "id": "marketing-design",
+  "name": "Marketing Design",
+  "domain": "Marketing",
+  "description": "Brand storytelling and conversion focus",
+  "status": "active",
+  "classificationTaxonomy": ["approval", "suggestion", "concern", "question", "statement"],
+  "guidelines": [
+    { "id": "brand-consistency", "label": "Evaluate brand consistency", "detail": "Voice, type, color, and imagery align with brand guidelines." },
+    { "id": "emotional-resonance", "label": "Assess emotional resonance", "detail": "Does the work land the intended feeling for the target audience?" },
+    { "id": "conversion-goals", "label": "Consider conversion goals", "detail": "Layout and CTA serve a clear, measurable conversion objective." },
+    { "id": "message-clarity", "label": "Check message clarity", "detail": "The core message is grasped in the first few seconds." },
+    { "id": "channel-fit", "label": "Confirm channel fit", "detail": "Format and tone suit the placement (social, email, display, OOH)." }
+  ],
+  "scoring": [
+    { "id": "intent-stated", "label": "Campaign intent stated", "description": "Presenter framed the audience, channel, and conversion goal." },
+    { "id": "engagement", "label": "High engagement", "description": "Cross-functional voices (brand, growth, design) contributing." },
+    { "id": "evidence-based", "label": "Evidence-based discussion", "description": "Feedback references performance data, A/B results, or brand research." },
+    { "id": "actionable", "label": "Actionable feedback", "description": "Each note maps to a concrete revision or test." }
+  ],
+  "coachingCues": [
+    { "trigger": "no-conversion-goal", "nudge": "Ask what conversion this is optimizing for", "kind": "question" },
+    { "trigger": "off-brand", "nudge": "Flag the deviation from brand guidelines", "kind": "suggestion" },
+    { "trigger": "no-audience-defined", "nudge": "Remind the team to name the target audience", "kind": "reminder" }
+  ]
+}

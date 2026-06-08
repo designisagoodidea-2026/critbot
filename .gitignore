@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output (when the plugin moves to TS + esbuild)
+dist/
+figma-plugin/code.js.map
+*.tsbuildinfo
+
+# Env / secrets — never commit backend keys, bot-service tokens, LLM API keys
+.env
+.env.*
+# ...but keep the safe template committable
+!.env.example
+*.local
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Air-gap guard: never commit real crit data or transcripts (synthetic only)
+# NOTE: keep these patterns on their own lines — git does NOT support inline
+# (trailing) comments, so "<pattern>  # note" silently fails to match.
+*.transcript
+crit-records/
+# .corrections.json — M4.1 tag-correction corpus (real crit text)
+.corrections.json
+# .roster.json — M7 relationship/org data (real people & roles)
+.roster.json

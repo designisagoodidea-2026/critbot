@@ -1,0 +1,15 @@
+{
+  "source": "synthetic",
+  "meetingId": "synthetic-001",
+  "title": "Onboarding Flow Redesign v3",
+  "startTime": "2026/06/05 10:00:00",
+  "duration": "18m",
+  "utterances": [
+    { "speaker": "Sarah Chen", "t": "0:42", "tSeconds": 42, "text": "Let me start by explaining the design intent. We wanted to simplify the onboarding flow.", "classification": null, "aiSuggestion": null },
+    { "speaker": "Marcus Liu", "t": "0:58", "tSeconds": 58, "text": "Could you clarify how this reduces steps compared to the current flow?", "classification": null, "aiSuggestion": null },
+    { "speaker": "Priya Sharma", "t": "1:14", "tSeconds": 74, "text": "I like the progressive disclosure approach. It feels less overwhelming.", "classification": null, "aiSuggestion": null },
+    { "speaker": "Marcus Liu", "t": "1:29", "tSeconds": 89, "text": "I'm concerned about the contrast ratio on the secondary buttons.", "classification": null, "aiSuggestion": null },
+    { "speaker": "Sarah Chen", "t": "1:45", "tSeconds": 105, "text": "We could increase the button weight to AAA compliance.", "classification": null, "aiSuggestion": null },
+    { "speaker": "Priya Sharma", "t": "2:03", "tSeconds": 123, "text": "That sounds like a solid approach. Let's also test with screen readers.", "classification": null, "aiSuggestion": null }
+  ]
+}

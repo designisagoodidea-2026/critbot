@@ -1,0 +1,7 @@
+{
+  "id": "synthetic-001",
+  "title": "Onboarding Flow Redesign v3 — crit (SYNTHETIC)",
+  "start_time": "2026/06/05 10:00:00",
+  "duration": "18m",
+  "transcript": "[0:00:42] Sarah Chen: Let me start by explaining the design intent. We wanted to simplify the onboarding flow.\n[0:00:58] Marcus Liu: Could you clarify how this reduces steps compared to the current flow?\n[0:01:14] Priya Sharma: I like the progressive disclosure approach. It feels less overwhelming.\n[0:01:29] Marcus Liu: I'm concerned about the contrast ratio on the secondary buttons.\n[0:01:45] Sarah Chen: We could increase the button weight to AAA compliance.\n[0:02:03] Priya Sharma: That sounds like a solid approach. Let's also test with screen readers."
+}

@@ -1,0 +1,10 @@
+{
+  "name": "critbot-figma-plugin",
+  "version": "0.0.1",
+  "description": "Critbot v1 sink — the post-crit review surface (action-item queue) for Figma. PARKED skeleton.",
+  "private": true,
+  "scripts": {
+    "lint:manifest": "node -e \"JSON.parse(require('fs').readFileSync('manifest.json','utf8'));console.log('manifest.json OK')\""
+  },
+  "comment": "Plain-JS skeleton: no build step, load manifest.json directly in Figma Desktop. To go beyond Hello World, add typescript + @figma/plugin-typings + esbuild (see README) and point manifest.main at the bundled output."
+}
