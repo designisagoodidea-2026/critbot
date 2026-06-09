@@ -74,7 +74,8 @@ The social/authority dimension is a **second configurable layer**, built like th
 
 - Generated design iterations (Screen 3 Option A/B previews).
 - Frame pinning in the Figma sink (needs `targets` node IDs — guess-then-confirm).
-- Live in-call role annotation; Graph/Workday roster + real-calendar providers; Recall.ai bot dispatch.
+- Live in-call role annotation — **offline core built** (`core/live/roleAnnotator.js`: M7 logic over the live event stream); remaining is wiring it into the running relay. Graph/Workday roster + real-calendar providers; Recall.ai bot dispatch.
+- The Screen-2 lens refactor (M8–M14: frozen core, RubricLens/SkillLens/MCPLens, faculty toggles) lives in `docs/lens-model.md`.
 
 ## Demoable checkpoints
 

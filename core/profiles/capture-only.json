@@ -1,0 +1,12 @@
+{
+  "id": "capture-only",
+  "name": "Capture Only",
+  "domain": "Any",
+  "description": "Transcribe and classify only — no live scorecard, no coaching. For crits that don't want to be graded.",
+  "extends": "ux-product-design",
+  "audience": "shared",
+  "faculties": {
+    "score": { "enabled": false },
+    "coach": { "enabled": false }
+  }
+}

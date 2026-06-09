@@ -1,0 +1,30 @@
+{
+  "id": "marketing-banner-q3",
+  "critbotVersion": "0.4",
+  "meta": {
+    "title": "Q3 Brand Banner — creative review",
+    "team": "Brand",
+    "library": "Marketing Design",
+    "source": "calendar",
+    "startedAt": "2026-06-03T09:30:00Z",
+    "endedAt": "2026-06-03T09:50:00Z",
+    "invited": ["Alex Kim", "Sam Doyle", "Priya Sharma"],
+    "speakers": ["Alex Kim", "Sam Doyle"]
+  },
+  "scorecard": [
+    { "id": "intent-stated", "label": "Campaign intent stated", "met": false, "note": "Audience never named" },
+    { "id": "engagement", "label": "High engagement", "met": false, "note": "Only 2 of 3 spoke" },
+    { "id": "evidence-based", "label": "Evidence-based discussion", "met": false, "note": "Taste-based" },
+    { "id": "actionable", "label": "Actionable feedback", "met": true, "note": "1 suggestion" }
+  ],
+  "coaching": [
+    { "trigger": "taste-based-feedback", "nudge": "Reframe the preference as a testable hypothesis", "kind": "suggestion", "count": 2 }
+  ],
+  "transcript": [
+    { "speaker": "Alex Kim", "t": "0:20", "text": "I just think the headline should be bigger.", "classification": "suggestion" },
+    { "speaker": "Sam Doyle", "t": "0:55", "text": "Agree, it feels a bit quiet.", "classification": "approval" }
+  ],
+  "actionItems": [
+    { "id": "ai-001", "content": "Define the target audience before the next creative round.", "type": "concern", "scope": ["design-level"], "targets": [], "transcriptAnchor": { "t": "0:20", "speaker": "Alex Kim" }, "rubricTag": "Audience", "status": "open" }
+  ]
+}

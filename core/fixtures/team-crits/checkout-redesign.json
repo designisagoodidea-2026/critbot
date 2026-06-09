@@ -1,0 +1,32 @@
+{
+  "id": "checkout-redesign",
+  "critbotVersion": "0.4",
+  "meta": {
+    "title": "Checkout Redesign — conversion review",
+    "team": "Growth",
+    "library": "Marketing Design",
+    "source": "live",
+    "startedAt": "2026-06-04T14:00:00Z",
+    "endedAt": "2026-06-04T14:22:00Z",
+    "invited": ["Dana Wu", "Omar Reyes", "Lin Park"],
+    "speakers": ["Dana Wu", "Omar Reyes", "Lin Park"]
+  },
+  "scorecard": [
+    { "id": "intent-stated", "label": "Campaign intent stated", "met": true, "note": "Conversion goal named up front" },
+    { "id": "engagement", "label": "High engagement", "met": true, "note": "3 participants" },
+    { "id": "evidence-based", "label": "Evidence-based discussion", "met": false, "note": "Mostly opinion — no A/B data cited" },
+    { "id": "actionable", "label": "Actionable feedback", "met": true, "note": "3 suggestions" }
+  ],
+  "coaching": [
+    { "trigger": "no-audience-defined", "nudge": "Remind the team to name the target audience", "kind": "reminder", "count": 1 }
+  ],
+  "transcript": [
+    { "speaker": "Dana Wu", "t": "0:30", "text": "Goal is lifting checkout completion — fewer fields, clearer CTA.", "classification": "statement" },
+    { "speaker": "Omar Reyes", "t": "1:10", "text": "The trust badges feel buried below the fold.", "classification": "concern" },
+    { "speaker": "Lin Park", "t": "1:40", "text": "We could move the badges next to the pay button.", "classification": "suggestion" }
+  ],
+  "actionItems": [
+    { "id": "ai-001", "content": "Move trust badges adjacent to the pay button.", "type": "suggestion", "scope": ["single-frame"], "targets": [], "transcriptAnchor": { "t": "1:40", "speaker": "Lin Park" }, "rubricTag": "Conversion", "status": "open" },
+    { "id": "ai-002", "content": "Pull A/B data on field count before the next round.", "type": "suggestion", "scope": ["design-level"], "targets": [], "transcriptAnchor": { "t": "0:30", "speaker": "Dana Wu" }, "rubricTag": "Evidence", "status": "open" }
+  ]
+}

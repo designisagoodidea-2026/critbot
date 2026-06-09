@@ -1,8 +1,8 @@
 # CLAUDE.md — Critbot Build Workspace
 
-> **Source of truth for Critbot build state.** Seeded 2026-06-05 from `Critbot-workspace-bootstrap.md` (CoS scoping discussion). The bootstrap doc is the original scoping memo; this file owns build state going forward.
+> **Build rules + routing for Critbot.** Seeded 2026-06-05 from `Critbot-workspace-bootstrap.md` (CoS scoping discussion); **`ROADMAP.md` owns milestone status.** Air-gapped from CoS (see below).
 >
-> **STATUS: PARKED.** Critbot sits behind `translation-engine` and `slide-publisher`. This workspace is *seeded*, not *un-parked*. Un-parking is a deliberate prioritization call — see `cos_poc_critbot_plugin.md` (CoS memory) for the triggers.
+> **STATUS: ACTIVE prototype — built through M1–M7 + packaging.** Working today (see `ROADMAP.md`): live mic → Deepgram diarized capture → Screen 1; real LLM classify/score/coach against the rubric libraries; the coaching engine; calendar detection + auto-join; relationship policies; the Electron desktop app; and a Figma plugin that renders exported crit records. **Current thread:** the Screen-2 lens refactor (M8+, see `docs/lens-model.md`) — M8/M9/M11 done, plus **M13 skill lens, M14 MCP/context lens, and live role annotation** (`core/lens/`, `core/live/roleAnnotator.js`). **Genuinely unbuilt near-term:** Recall.ai bot dispatch into remote Zoom/Teams calls, real-calendar OAuth, and Figma frame pinning (M12).
 
 ---
 
@@ -43,7 +43,7 @@ The rubric-library system (Screen 2) is the defensible differentiator — Design
 
 ## Architecture
 
-See `docs/architecture.md` for the full diagram. In short: a **platform-agnostic capture core** produces a **structured crit record** (interchange object), and every sink — Figma first, then Jira / Asana / Linear — is a thin adapter over that same record. Build the Figma adapter first; the others come close to free.
+See `docs/architecture.md` for the full diagram. In short: a **platform-agnostic capture core** produces a **structured crit record** (interchange object), and every sink — Figma first, then Jira / Asana / Linear — is a thin adapter over that same record. Build the Figma adapter first; the others come close to free. The input side is symmetric: Screen 2 is a **pluggable lens** over the transcript (frozen core / open rim) — the dual of the sinks. See `docs/lens-model.md`.
 
 ## Data model
 
@@ -51,27 +51,43 @@ See `docs/data-model.md` for the `ActionItem` / crit-record schema. Key principl
 
 ## Figma plugin (the v1 sink)
 
-The plugin is the **review surface**, not the listener. Designer opens it post-crit, sees the action-item queue anchored to frames, jumps to transcript moments, checks items off. Skeleton lives in `figma-plugin/` — see its README. The listening half **cannot** be a Figma plugin (sandboxed, no mic/audio/call access).
+The plugin is the **review surface**, not the listener. Designer opens it post-crit, sees the action-item queue, jumps to transcript moments, checks items off. **Built** (`figma-plugin/`): loads an exported crit record and renders the queue with M7 role/weight/decision/protect badges, meta, scorecard, and relationship notes; loads in Figma Desktop. Still to come: **frame pinning** — anchoring items to `targets[]` node IDs (M12, guess-then-confirm). The listening half **cannot** be a Figma plugin (sandboxed, no mic/audio/call access).
 
 ## Build slices (suggested sequencing)
 
 1. **Capture spike** — stand up the capture path, get a real transcript out of a test Zoom/Teams crit.
 2. **Classify + score** — LLM pass that tags utterances and computes the crit-quality scorecard against one rubric library. (Screen 1 logic.)
-3. **Rubric libraries** — make the lens configurable; 2–3 starter libraries. (Screen 2.)
+3. **Rubric libraries → profiles** — make the lens configurable; 2–3 starter libraries. (Screen 2.) **Now built as `Profile`s over a frozen `Lens` interface, not static rubric JSON — see `docs/lens-model.md`.**
 4. **Action-item extraction** — produce the structured crit record from the classified transcript.
 5. **Figma review plugin** — the panel that renders the queue, anchors to frames, links to transcript. (Stubbed Screen 3.)
 6. **Live coaching** — real-time nudges during the call. (Hardest real-time piece; can trail the others.)
 
 Each slice is demoable on its own. **Don't build sink #2 (Jira/Asana/Linear) until the Figma sink and the crit record are proven.**
 
-> **CURRENT FOCUS: Screens 1 & 2** — the live critique experience (transcribe → classify → score → coach) and the rubric libraries that power it. That's slices 2, 3, and 6. The **Figma plugin (slice 5) is the eventual sink, NOT the current target** — `figma-plugin/` is a parked skeleton; don't center it. First working code lives in `core/` (see `core/README.md`): the rubric-library format + starter libraries (Screen 2), an Otter→live-transcript adapter, and an offline-runnable classify/score/coach engine (Screen 1). Run `node core/test.js`.
+> **CURRENT FOCUS: the Screen-2 lens refactor (M8+).** Screens 1 & 2 are built and run live (transcribe → classify → score → coach in `core/live/`, real LLM provider, against the rubric libraries); the Figma plugin is a working review sink. The current thread reshapes Screen 2 into **pluggable lenses** — see `docs/lens-model.md`; M8/M9/M11 plus the M13 skill lens, M14 MCP/context lens, and live role annotation are done in `core/lens/` + `core/profiles/` + `core/live/roleAnnotator.js`, with `node core/test.js` green (offline engine + parity + skill/MCP lenses + role annotation). The original slice list (1–6) is superseded by the M-series in `ROADMAP.md` and the M8+ sequence in `docs/lens-model.md`.
 
-## Capture path — first big decision (OPEN)
+## Reconciled roadmap (post-M7)
+
+**Done — M1–M7:** offline engine (classify / score / coach), static rubric libraries, action-item extraction, crit-record wrapper (M4), calendar/roster data model (M6), social-graph enrichment + packaging (M7) — all against synthetic / Otter corpus.
+
+**Screen 2 is being rebuilt as the lens model** (agreed 2026-06-08): static rubric → pluggable `Profile`s over a frozen `Lens` interface (frozen core / open rim). Full contract + sequencing live in `docs/lens-model.md`. Three strands ahead, interleaved:
+
+- **A · Capture (go live)** — Recall.ai bot dispatch, calendar detection, live rosters, live role annotation. The slice-1 spike, now near-term; produces the live event stream.
+- **B · Lens refactor** — Phases 0–5 (lock contract → seam → faculty toggles → skill lens → MCP lens → multi-lens).
+- **C · Figma sink + frame pinning** — review panel + resolve `ActionItem.targets[]` (guess-then-confirm).
+
+**Order (M8+):** M8 Phase 0 (freeze core/rim + live event shape) → M9 Phase 1 (seam: profiles + `RubricLens`, zero behavior change) → M10 capture go-live → M11 Phase 2 (faculty toggles) → M12 Figma sink + frame pinning → M13 Phase 3 (skill lens) → M14 Phase 4 (MCP lens) → v2+ Phase 5 (multi-lens) + generated iterations. Strands A and B are concurrent-safe once M8 locks the event; their order is a priority call. Gates and rationale in `docs/lens-model.md`.
+
+## Capture path — BUILT (local); remote-call admission still open
+
+**Built:** local mic → **Deepgram** diarized streaming → relay (`core/live/`) → Screen 1. A self-hosted **WhisperLiveKit** local-ASR option exists too (`relay-local.js`), and `relayHttp.js` proves the ASR vendor is swappable without touching the page/engine. So Screen 1 already runs on a real, live conversation.
+
+**Still open — getting into a *remote* call.** The built path captures a local mic; it does not yet *join* a Zoom/Teams meeting. Two routes:
 
 - **A. Native Zoom App + Teams app** — clean native consent story; cost is two platform integrations + two app-review gauntlets. Heavy.
-- **B. Meeting-bot-as-a-service** (e.g. Recall.ai) — one API joins Zoom/Teams/Meet from a calendar event, streams back audio + transcript. Fast to prototype; consent/notification becomes your responsibility.
+- **B. Meeting-bot-as-a-service** (e.g. Recall.ai) — one API dispatches a bot from a calendar event into Zoom/Teams/Meet, streams back audio + transcript. The documented `/api/join` seam (M6) is built for exactly this; in the prototype "join" auto-starts local capture.
 
-**Lean for v1 prototype: Route B.** Revisit native if consent or enterprise-bot-blocking becomes the constraint. **Verify Recall.ai's current capabilities/pricing before committing — confirm at kickoff, don't assume.** Consent + bot-admittance is a first-class design problem, not a footnote: some target orgs block external bots.
+**Lean: Route B.** **Verify Recall.ai's current capabilities/pricing before committing.** Consent + bot-admittance is a first-class design problem: some target orgs block external bots.
 
 ### Otter — two roles, and what it is NOT (researched 2026-06-05)
 
@@ -85,7 +101,7 @@ Otter comes up because it does great in-app live transcription with voice-finger
 
 ## Scope boundaries / non-goals (v2+)
 
-- **Generated design iterations** (Screen 3 Option A/B previews) — cost + credibility-risk center; needs deep Figma *write* access. **v2.**
+- **Generated design iterations** (Screen 3 Option A/B previews) — cost + credibility-risk center; needs deep Figma *write* access. Likely a **separate module / deliverable, not a build phase** — depends on frame pinning (M12) and a proven Figma sink. **v2.**
 - **In-person / co-located crit capture** (no call to join) — separate ingestion pipeline (local-mic desktop widget). **v2 fork.** v1 assumes a call exists.
 - **Design-system-aware enrichment** (token/variant/Code Connect context on spoken feedback) — survives as *enrichment inside the Figma sink*, not the core. **v2.**
 
@@ -94,13 +110,13 @@ Otter comes up because it does great in-app live transcription with voice-finger
 - **Attributed to Jason.** Critbot is a deliberate prospect-facing artifact, already attributed on Figma Community. The open-source-anonymity rule (which governs Slide Publisher) does **NOT** apply here.
 - **Air-gapped from CoS.** No CoS specifics, network, intel, or real transcripts in the plugin or demos. **All demo crit data is synthetic.** If a prospect demo emerges, use the two-version pattern.
 
-## Open questions to resolve at kickoff
+## Open questions
 
-1. Capture path: confirm Route B (Recall.ai) is current and viable, or commit to native apps. *(Researched 2026-06-05: Recall.ai still the Route B answer — calendar-dispatched bot + real-time transcript stream. Otter ruled out as the live pipe; see "Otter — two roles" above.)*
-2. Transcription source: rely on the bot-service's transcript, or pipe audio to a dedicated ASR (Deepgram / AssemblyAI / Whisper) for quality? *(Recall streams a real-time transcript out of the box; ASR upgrade is a quality call, not a blocker.)*
-3. Where does the backend live + where is the crit record stored? (Lightweight first — don't over-build infra.)
-4. Rubric-library format: how are libraries authored/edited (config file, simple UI)?
-5. Consent/admittance design for enterprise calls that block external bots.
+1. Capture path: **local capture is BUILT (Deepgram live + WhisperLiveKit option).** Remaining decision: Recall.ai **bot dispatch** into a remote Zoom/Teams call (needs an account; the `/api/join` seam is built) vs. native apps. Verify Recall.ai capabilities/pricing before committing.
+2. Transcription source: **Resolved** — Deepgram live, with a self-hosted WhisperLiveKit option; ASR vendor is swappable via `relayHttp.js` without touching the page/engine.
+3. Backend + crit-record storage: the `core/live/` relay is the prototype backend; a record exports as `record.json` + `summary.md`. **Durable multi-crit storage is still open** — the MCP lens (M14) would want prior crits queryable.
+4. Rubric-library format: *(Resolved 2026-06-08: `Profile`s over a frozen `Lens` interface — frozen core / open rim, faculties model. See `docs/lens-model.md`. Authoring UI explicitly deferred.)*
+5. Consent/admittance for enterprise calls that block external bots. **Partial** — a consent note is in the UI (M5); enterprise bot-admission remains open and ties to the Route-B decision in #1.
 
 ## Prerequisites
 
@@ -113,28 +129,34 @@ Otter comes up because it does great in-app live transcription with voice-finger
 
 ```
 Critbot/
-├── CLAUDE.md                        ← this file (build-state source of truth)
+├── CLAUDE.md                        ← this file (build-state rules + routing)
+├── ROADMAP.md                       ← milestone status (M1–M7 + packaging DONE; see its "Parked")
 ├── README.md                        ← quick orientation
 ├── Critbot-workspace-bootstrap.md   ← original scoping memo (do not edit; historical)
-├── core/                            ← CURRENT FOCUS — Screen 1 & 2 logic (run: node core/test.js)
-│   ├── README.md
-│   ├── test.js                      ← no-dep smoke test + readable demo
-│   ├── rubric-libraries/            ← Screen 2: the lens (the moat)
-│   │   ├── library.schema.json
-│   │   ├── ux-product-design.json   ← active starter library
-│   │   ├── marketing-design.json    ← active starter library
-│   │   ├── hbr-strategy.json        ← active starter library
-│   │   └── {motion,industrial,editorial,spatial}-design.json  ← stubs
-│   ├── engine/
-│   │   └── classifyScoreCoach.js    ← Screen 1: classify + score + coach (offline stub provider)
-│   ├── adapters/otter/              ← real, diarized transcript as dev corpus
-│   │   ├── otterToTranscript.js
-│   │   ├── inspect.js               ← structure-only check (safe on real data)
-│   │   └── fixtures/synthetic-otter-meeting.json
-│   └── fixtures/synthetic-transcript.json   ← committed demo Screen 1 transcript
+├── core/                            ← Screen 1 & 2 logic + capture (run: node core/test.js)
+│   ├── README.md · test.js          ← orientation + no-dep smoke test/demo
+│   ├── lens/                        ← the seam (M8–M14): frozen core + Lens interface + lenses
+│   │   ├── lens.js                  ← normalizeProfile + RubricLens + runLens
+│   │   ├── skillLens.js             ← prose-authored skill lens (M13)
+│   │   ├── mcpLens.js               ← MCP/context lens (M14)
+│   │   └── CONTRACT.md              ← frozen-core / open-rim contract
+│   ├── profiles/                    ← Screen 2 as faculties (M11): schema, capture-only, skills/ (skill lenses)
+│   ├── rubric-libraries/            ← Screen 2 lenses (the moat): 3 active + 4 stubs + schema
+│   ├── engine/                      ← Screen 1 intelligence + crit record
+│   │   ├── classifyScoreCoach.js    ← classify/score/coach — now a shim over lens/ (M9)
+│   │   ├── coach.js                 ← live-coaching engine (M2)
+│   │   ├── llmProvider.js           ← LLM classify/score/coach/extract (heuristic = offline fallback)
+│   │   ├── critRecord.js            ← crit-record wrapper + Markdown export (M4)
+│   │   ├── calendar.js              ← crit-event detection + invited roster (M6)
+│   │   └── relationships.js         ← relationship-policy engine / social graph (M7)
+│   ├── relationship-policies/       ← M7 policies (hierarchical / peer / expertise-led) + schema
+│   ├── live/                        ← capture + Screen 1/2 UI: Deepgram relay, rosters, roleAnnotator.js — see live/README
+│   ├── desktop/                     ← Electron menubar/desktop shell (M5 packaging) — see desktop/README
+│   ├── adapters/otter/              ← real diarized transcript as dev corpus (inspect = structure-only)
+│   └── fixtures/                    ← synthetic-transcript.json + generator/ (eval harnesses)
 ├── docs/
-│   ├── architecture.md              ← capture core + pluggable sinks
-│   └── data-model.md                ← the crit record / ActionItem schema
-└── figma-plugin/                    ← eventual v1 sink skeleton (NOT current focus)
-    ├── manifest.json · code.js · ui.html · package.json · README.md
+│   ├── architecture.md              ← capture core + pluggable sinks (+ pluggable lenses)
+│   ├── data-model.md                ← the crit record / ActionItem schema
+│   └── lens-model.md                ← Screen 2 as pluggable lenses + reconciled roadmap (M8+)
+└── figma-plugin/                    ← v1 Figma review sink: loads a crit record, renders the queue (M7 badges)
 ```

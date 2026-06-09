@@ -1,0 +1,13 @@
+{
+  "name": "critbot",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Critbot — crit-aware meeting capture. The hosted entrypoint runs the live relay (Deepgram + the Screen 1/2 app + the team crit store).",
+  "scripts": {
+    "start": "node core/live/relay.js",
+    "test": "node core/test.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

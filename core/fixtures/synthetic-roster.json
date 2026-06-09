@@ -1,0 +1,9 @@
+{
+  "id": "synthetic-roster",
+  "presenterId": "p1",
+  "participants": [
+    { "id": "p1", "name": "Sarah Chen", "role": "Product Designer", "authority": 2, "expertise": ["onboarding"] },
+    { "id": "p2", "name": "Marcus Liu", "role": "Engineering Manager", "authority": 3, "expertise": ["accessibility", "contrast"] },
+    { "id": "p3", "name": "Priya Sharma", "role": "Product Designer", "authority": 2, "expertise": ["research"] }
+  ]
+}

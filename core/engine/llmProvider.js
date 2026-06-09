@@ -63,11 +63,14 @@ async function classifyUtterance({ text, context, library, examples }) {
     ? "\n\nThis team's past corrections — match these conventions:\n" +
       examples.map((e) => `- "${String(e.text).slice(0, 80)}" → ${e.toTag}${e.rationale ? " (" + e.rationale + ")" : ""}`).join("\n")
     : "";
+  const perspective = library.perspective
+    ? `\n\nThis lens was authored by a participant (e.g. the presenter). Reason from their perspective — weight their stated intent:\n${String(library.perspective).slice(0, 1200)}`
+    : "";
   const system =
     `Critbot live critique classifier. Lens: "${library.name}" (${library.domain}).\n` +
     `Classify ONE utterance as exactly one of: ${TYPES.join(" | ")}.\n` +
     `Optionally flag ONE coaching trigger id from: ${triggers} (else null).\n` +
-    `Guidelines:\n${guidelineList(library)}${ex}\n\n` +
+    `Guidelines:\n${guidelineList(library)}${perspective}${ex}\n\n` +
     `Reply ONLY JSON: {"classification":"<type>","trigger":<id-or-null>}`;
   const user = (context ? "Context:\n" + context + "\n\n" : "") + 'Utterance:\n"' + text + '"';
   const out = parseJson(await callAnthropic(MODEL_FAST(), system, user, 120));
@@ -80,8 +83,11 @@ async function classifyUtterance({ text, context, library, examples }) {
 async function analyzeCrit({ utterances, library }) {
   const dims = (library.scoring || []).map((d) => `- ${d.id} (${d.label}): ${d.description || ""}`).join("\n");
   const transcript = utterances.map((u) => `[${u.t}] ${u.speaker}: ${u.text}`).join("\n").slice(0, 5000);
+  const persp = library.perspective
+    ? `\nLens authored by a participant — reason from their stated perspective:\n${String(library.perspective).slice(0, 1200)}\n`
+    : "";
   const system =
-    `Score this live design critique through the "${library.name}" lens.\n` +
+    `Score this live design critique through the "${library.name}" lens.\n${persp}` +
     `For each dimension set met (true/false) with a short evidence note from the transcript:\n${dims}\n\n` +
     `Reply ONLY JSON: {"scorecard":[{"id","label","met":bool,"note"}]}`;
   const out = parseJson(await callAnthropic(MODEL_DEEP(), system, transcript, 500));

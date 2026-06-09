@@ -27,7 +27,7 @@ function createRelayServer(opts) {
   const KEY = opts.deepgramKey || process.env.DEEPGRAM_API_KEY;
   const LLM_ON = relayHttp.llmOn();
   const server = http.createServer((req, res) => { relayHttp.handle(req, res); });
-  const wss = new WebSocket.Server({ server, path: "/ws" });
+  const wss = new WebSocket.Server({ server, path: "/ws", verifyClient: (info) => relayHttp.authOk(info.req) });
 
   wss.on("connection", (browser) => {
     console.log("• browser connected — opening Deepgram stream");

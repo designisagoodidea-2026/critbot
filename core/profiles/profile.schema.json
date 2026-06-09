@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://critbot/profile.schema.json",
+  "title": "Critbot profile",
+  "description": "A profile is the Screen 2 artifact: a lens over the transcript, expressed as faculties (classify/score/annotate/coach/extract), each independently switchable. A rubric library is a valid profile with all faculties on and no skill/MCP bindings — so library.schema.json files normalize into this. See ../../docs/lens-model.md and ../lens/CONTRACT.md.",
+  "type": "object",
+  "required": ["id"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "name": { "type": "string" },
+    "label": { "type": "string" },
+    "domain": { "type": "string" },
+    "description": { "type": "string" },
+    "extends": { "type": "string", "description": "id of a profile/library this composes over (house → team → personal). Resolved against a registry at normalize time." },
+    "audience": { "type": "string", "enum": ["shared", "presenter-private", "role-scoped"], "default": "shared", "description": "default ear for this lens's emissions" },
+    "faculties": {
+      "type": "object",
+      "description": "per-faculty switches + config. Anything omitted inherits from `extends`, then from core defaults (classify/score/coach on; annotate/extract off).",
+      "additionalProperties": false,
+      "properties": {
+        "classify": { "$ref": "#/$defs/faculty" },
+        "score":    { "$ref": "#/$defs/faculty" },
+        "annotate": { "$ref": "#/$defs/faculty" },
+        "coach":    { "$ref": "#/$defs/faculty" },
+        "extract":  { "$ref": "#/$defs/faculty" }
+      }
+    },
+    "classificationTaxonomy": { "type": "array", "items": { "type": "string" }, "description": "rim-defined classify vocabulary; defaults to the core five" },
+    "scoring": { "type": "array", "description": "rim-defined score dimensions (same shape as library.schema.json)" },
+    "coachingCues": { "type": "array", "description": "rim-defined coach cues (same shape as library.schema.json)" },
+    "guidelines": { "type": "array", "description": "the lens's notion of a good crit; carried through from a library" },
+    "context": { "type": "array", "description": "MCP/context bindings the lens may pull from, e.g. [{ id, source, query }]. Resolved by a ContextProvider at runtime and folded into the perspective (MCP lens, M14)." }
+  },
+  "$defs": {
+    "faculty": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    }
+  }
+}

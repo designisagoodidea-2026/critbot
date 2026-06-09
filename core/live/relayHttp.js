@@ -12,9 +12,22 @@ const llm = require("../engine/llmProvider");
 const critRecord = require("../engine/critRecord");
 const calendar = require("../engine/calendar");
 const relationships = require("../engine/relationships");
+const sessions = require("../engine/sessionStore");
 
 const ROOT = path.join(__dirname, ".."); // core/
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".css": "text/css" };
+
+// Optional shared-password gate for hosted/public deploys (set CRITBOT_PASSWORD on
+// the host). HTTP Basic auth; any username, password must match. Empty = open
+// (local dev, the desktop app, and the cloudflared tunnel run ungated).
+function authOk(req) {
+  const pass = process.env.CRITBOT_PASSWORD || "";
+  if (!pass) return true;
+  const h = (req.headers && req.headers.authorization) || "";
+  if (h.indexOf("Basic ") !== 0) return false;
+  const dec = Buffer.from(h.slice(6), "base64").toString("utf8");
+  return dec.slice(dec.indexOf(":") + 1) === pass;
+}
 
 function loadEnv() {
   try {
@@ -80,6 +93,8 @@ function sendJson(res, code, obj) { res.writeHead(code, { "Content-Type": "appli
 // Handle one HTTP request: API routes + static. Returns true if handled.
 async function handle(req, res) {
   const url = req.url.split("?")[0];
+
+  if (!authOk(req)) { res.writeHead(401, { "WWW-Authenticate": 'Basic realm="Critbot"', "Content-Type": "text/plain" }); res.end("Critbot — password required"); return true; }
 
   if (url === "/api/health") return sendJson(res, 200, { llm: llmOn() }), true;
 
@@ -168,6 +183,17 @@ async function handle(req, res) {
     }
   }
 
+  // Session management + shared (team) crit store. GET list · POST publish · GET :id.
+  if (url === "/api/sessions" && req.method === "GET") return sendJson(res, 200, { sessions: await sessions.list(), config: sessions.config() }), true;
+  if (url === "/api/sessions" && req.method === "POST") {
+    try { const body = JSON.parse((await readBody(req)) || "{}"); const out = await sessions.publish(body.record || body); return sendJson(res, 200, Object.assign({ ok: true }, out)), true; }
+    catch (e) { return sendJson(res, 200, { ok: false, error: String(e.message || e) }), true; }
+  }
+  if (url.startsWith("/api/sessions/") && req.method === "GET") {
+    const rec = await sessions.get(decodeURIComponent(url.slice("/api/sessions/".length)));
+    return sendJson(res, rec ? 200 : 404, rec ? { record: rec } : { error: "not found" }), true;
+  }
+
   // static
   let rel = decodeURIComponent(url);
   if (rel === "/" || rel === "/live" || rel === "/live/") rel = "/live/index.html";
@@ -186,4 +212,4 @@ async function handle(req, res) {
   return true;
 }
 
-module.exports = { loadEnv, handle, llmOn, ROOT };
+module.exports = { loadEnv, handle, llmOn, authOk, ROOT };

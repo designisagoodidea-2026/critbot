@@ -59,6 +59,8 @@
   .coach .n { font-size: 14px; line-height: 1.5; color: #eef0f3; }
   .coach .count { margin-left: auto; font-size: 11px; color: #8b93a3; white-space: nowrap; }
   .empty { color: #6f7787; font-size: 13px; }
+  .settings .setrow { margin: 10px 0; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .settings .setrow.consent { color: #8b93a3; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -66,25 +68,41 @@
   <header>
     <div><h1>Live Critique</h1><div class="status" id="status">idle — press Start and grant mic access</div></div>
     <div class="controls">
-      <label class="status">Library:
+      <a href="/live/sessions.html" class="status" style="color:#6aa3f0;text-decoration:none">Team Crits →</a>
+      <button id="settings-btn" title="Settings">⚙ Settings</button>
+      <button id="save">Save crit</button>
+      <button id="rec" class="rec">● Start</button>
+    </div>
+  </header>
+
+  <div id="settings" class="panel settings" style="display:none">
+    <h2>Settings</h2>
+    <div class="setrow">
+      <label class="status">Critique library (lens):
         <select id="library">
           <option value="ux-product-design">UX Product Design</option>
           <option value="marketing-design">Marketing Design</option>
           <option value="hbr-strategy">HBR-Inspired</option>
         </select>
       </label>
-      <a href="/live/libraries.html" class="status" style="color:#6aa3f0;text-decoration:none">Libraries →</a>
+      <a href="/live/libraries.html" class="status" style="color:#6aa3f0;text-decoration:none">Manage libraries →</a>
       <a href="/live/roster.html" class="status" style="color:#6aa3f0;text-decoration:none">Roster →</a>
-      <button id="export">Export</button>
-      <button id="rec" class="rec">● Start</button>
     </div>
-  </header>
-  <div class="consent">Critbot captures your microphone while recording — make sure participants consent before you start.</div>
+    <div class="setrow">
+      <label><input type="checkbox" id="autojoin" onchange="autoJoin=this.checked; renderUpcoming();"> Auto-join when a crit starts</label>
+    </div>
+    <div class="setrow consent">Critbot captures your microphone while recording — make sure participants consent before you start.</div>
+  </div>
+
   <div id="upcoming" class="upcoming"></div>
 
   <div class="panel">
-    <h2>Critique Quality</h2>
+    <h2>Critique Quality &amp; Coaching</h2>
     <div class="score" id="score"><div class="empty">Scorecard updates as the crit unfolds.</div></div>
+    <div class="coach" style="margin-top:16px">
+      <h3 style="font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#8b93a3;margin:0 0 8px">Coaching</h3>
+      <div id="coach"><div class="empty">Nudges appear here.</div></div>
+    </div>
   </div>
 
   <div class="panel">
@@ -93,14 +111,10 @@
     <div id="transcript"><div class="empty">No speech yet.</div></div>
     <div class="interim" id="interim"></div>
   </div>
-
-  <div class="panel coach">
-    <h2>Coaching</h2>
-    <div id="coach"><div class="empty">Nudges appear here.</div></div>
-  </div>
 </div>
 
-<script src="/engine/classifyScoreCoach.js?v=4"></script>
+<script src="/lens/lens.js?v=5"></script>
+<script src="/engine/classifyScoreCoach.js?v=5"></script>
 <script src="/engine/coach.js?v=4"></script>
 <script>
 /* ═══════════ INLINED PARSER · Deepgram message → utterances ═══════════ */
@@ -317,7 +331,7 @@ const MAX_RECONNECT = 6;
 
 // --- WebSocket lifecycle, with auto-reconnect on a dropped relay connection ---
 function connectWS() {
-  ws = new WebSocket("ws://" + location.host + "/ws");
+  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
   ws.binaryType = "arraybuffer";
   ws.onmessage = handleWsMessage;
   ws.onopen = () => { reconnectAttempts = 0; };
@@ -492,9 +506,7 @@ function downloadFile(name, content, type) {
   a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
-async function exportCrit() {
-  if (!lastView.length) { setStatus("nothing to export yet — run a crit first"); return; }
-  setStatus("building crit record…");
+async function buildCritRecord() {
   const evt = activeEvent;
   const payload = {
     libraryId,
@@ -509,14 +521,24 @@ async function exportCrit() {
     scorecard: lastScorecard,
     coaching: lastCoaching
   };
-  let r; try { r = await (await fetch("/api/crit-record", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) })).json(); } catch (e) { r = null; }
-  if (!r || !r.record) { setStatus("export failed — is the relay running?"); return; }
-  const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
-  downloadFile("critbot-record-" + stamp + ".json", JSON.stringify(r.record, null, 2), "application/json");
-  downloadFile("critbot-summary-" + stamp + ".md", r.markdown, "text/markdown");
-  setStatus("exported record.json + summary.md · " + (r.record.actionItems || []).length + " action items");
+  try { return await (await fetch("/api/crit-record", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) })).json(); }
+  catch (e) { return null; }
 }
-$("export").onclick = exportCrit;
+// Save = publish the crit to the team store (Team Crits). No file download —
+// grab a .json from the crit's page in Team Crits if you need one (e.g. to load
+// into the Figma plugin). downloadFile() stays available for that.
+async function saveCrit() {
+  if (!lastView.length) { setStatus("nothing to save yet — run a crit first"); return; }
+  setStatus("saving crit…");
+  const r = await buildCritRecord();
+  if (!r || !r.record) { setStatus("save failed — is the relay running?"); return; }
+  let out; try { out = await (await fetch("/api/sessions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ record: r.record }) })).json(); } catch (e) { out = null; }
+  const n = (r.record.actionItems || []).length;
+  if (out && out.ok) setStatus(`saved to Team Crits · ${n} action item${n === 1 ? "" : "s"} · ${out.target}`);
+  else setStatus(`save failed${out && out.error ? ": " + out.error : ""}`);
+}
+$("save").onclick = saveCrit;
+$("settings-btn").onclick = () => { const s = $("settings"); s.style.display = s.style.display === "none" ? "block" : "none"; };
 
 /* ═══════════ CALENDAR / AUTO-JOIN (M6) ═══════════ */
 // Calendar awareness: surface the live/next crit, and (opt-in) auto-arm capture
@@ -544,8 +566,7 @@ function renderUpcoming() {
   } else {
     html += `<span class="soon">No crits on the calendar.</span>`;
   }
-  html += ` <label><input type="checkbox" id="autojoin" ${autoJoin ? "checked" : ""} onchange="autoJoin=this.checked"> auto-join when a crit starts</label>`;
-  el.innerHTML = html;
+  el.innerHTML = html; // auto-join toggle now lives in Settings
 }
 function joinLive() { const live = upcomingCrits.find((e) => e.status === "live"); if (live) joinEvent(live); }
 function joinEvent(ev) { activeEvent = ev; joining = true; if (!on) $("rec").click(); else joining = false; }

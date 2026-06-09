@@ -1,0 +1,33 @@
+{
+  "id": "onboarding-flow-v3",
+  "critbotVersion": "0.4",
+  "meta": {
+    "title": "Onboarding Flow v3 — design critique",
+    "team": "Design Systems",
+    "library": "UX Product Design",
+    "source": "live",
+    "startedAt": "2026-06-05T10:00:00Z",
+    "endedAt": "2026-06-05T10:18:00Z",
+    "invited": ["Sarah Chen", "Marcus Liu", "Priya Sharma"],
+    "speakers": ["Sarah Chen", "Marcus Liu", "Priya Sharma"]
+  },
+  "scorecard": [
+    { "id": "design-intent-stated", "label": "Design intent stated", "met": true, "note": "Intent framed early" },
+    { "id": "engagement", "label": "High engagement", "met": true, "note": "3 participants" },
+    { "id": "evidence-based", "label": "Evidence-based discussion", "met": true, "note": "References to testing" },
+    { "id": "actionable", "label": "Actionable feedback", "met": true, "note": "2 suggestions, 1 concern" }
+  ],
+  "coaching": [
+    { "trigger": "concern-without-next-step", "nudge": "Ask what concrete change would resolve the concern", "kind": "question", "count": 1 }
+  ],
+  "transcript": [
+    { "speaker": "Sarah Chen", "t": "0:42", "text": "Let me start with the design intent — simplify onboarding via progressive disclosure.", "classification": "statement" },
+    { "speaker": "Marcus Liu", "t": "1:29", "text": "I'm concerned about the contrast ratio on the secondary buttons.", "classification": "concern" },
+    { "speaker": "Sarah Chen", "t": "1:45", "text": "We could increase the button weight to AAA compliance.", "classification": "suggestion" },
+    { "speaker": "Priya Sharma", "t": "2:03", "text": "Sounds solid. Let's also test with screen readers.", "classification": "suggestion" }
+  ],
+  "actionItems": [
+    { "id": "ai-001", "content": "Raise secondary-button contrast to AAA.", "type": "suggestion", "scope": ["component-set"], "targets": [], "transcriptAnchor": { "t": "1:45", "speaker": "Sarah Chen" }, "rubricTag": "Accessibility", "status": "open" },
+    { "id": "ai-002", "content": "Run a screen-reader pass on the onboarding flow.", "type": "suggestion", "scope": ["design-level"], "targets": [], "transcriptAnchor": { "t": "2:03", "speaker": "Priya Sharma" }, "rubricTag": "Accessibility", "status": "open" }
+  ]
+}

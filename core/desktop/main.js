@@ -50,6 +50,7 @@ function createTray() {
       { label: "Open Critbot", click: () => { win.show(); win.focus(); } },
       { label: "Libraries", click: () => shell.openExternal(`http://127.0.0.1:${PORT}/live/libraries.html`) },
       { label: "Roster", click: () => shell.openExternal(`http://127.0.0.1:${PORT}/live/roster.html`) },
+      { label: "Team Crits", click: () => shell.openExternal(`http://127.0.0.1:${PORT}/live/sessions.html`) },
       { type: "separator" },
       { label: "Quit Critbot", click: () => { app.isQuitting = true; app.quit(); } }
     ]);
