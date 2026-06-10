@@ -61,6 +61,27 @@
   .empty { color: #6f7787; font-size: 13px; }
   .settings .setrow { margin: 10px 0; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
   .settings .setrow.consent { color: #8b93a3; font-size: 12px; }
+
+  /* ── Mobile (phones). Scoped here so the desktop layout above is untouched. ── */
+  @media (max-width: 640px) {
+    /* Flex column lets us reorder: bring the live transcript onto the first
+       screen, above the taller scorecard/coaching panel. */
+    .wrap { display: flex; flex-direction: column; padding: 14px; }
+    header            { order: 1; flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 14px; }
+    #settings         { order: 2; }
+    #upcoming         { order: 3; }
+    .panel-transcript { order: 4; }   /* ← transcript now sits above… */
+    .panel-quality    { order: 5; }   /*    …the scorecard + coaching   */
+
+    h1 { font-size: 22px; }
+    .controls { flex-wrap: wrap; gap: 8px; }
+    .controls button { flex: 1 1 auto; }     /* buttons fill the row, easy to tap */
+    button, select { padding: 11px 14px; font-size: 14px; }
+    button.rec { min-width: 96px; }
+
+    .score { grid-template-columns: repeat(2, 1fr); }  /* 4 cramped cols → 2 */
+    #transcript { max-height: 52vh; }                   /* show a real chunk of speech */
+  }
 </style>
 </head>
 <body>
@@ -96,7 +117,7 @@
 
   <div id="upcoming" class="upcoming"></div>
 
-  <div class="panel">
+  <div class="panel panel-quality">
     <h2>Critique Quality &amp; Coaching</h2>
     <div class="score" id="score"><div class="empty">Scorecard updates as the crit unfolds.</div></div>
     <div class="coach" style="margin-top:16px">
@@ -105,7 +126,7 @@
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel panel-transcript">
     <h2>Live Transcript <span class="chip" id="brain">…</span> <span class="status" id="diar"></span></h2>
     <div id="speakers" class="speakers"></div>
     <div id="transcript"><div class="empty">No speech yet.</div></div>
