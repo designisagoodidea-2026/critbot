@@ -2,6 +2,54 @@
 
 Goal: run the relay on Railway so the demo is live **independent of your Mac** — no terminal windows, no tunnel — behind a shared password, with saved crits persisting to GitHub.
 
+---
+
+## One-command deploy (the routine path)
+
+Day to day you don't touch the from-scratch steps below — those were the **one-time setup**. To ship a change, from the repo root:
+
+```
+npm run deploy -- "what changed"
+```
+
+That's the whole pipeline. `scripts/deploy.sh` is deterministic — same thing every time:
+
+1. **Token** — reads a GitHub PAT from the **macOS Keychain** (item `critbot-deploy`), or `$CRITBOT_DEPLOY_TOKEN` if set.
+2. **Clone → temp** — clones the remote into a temp dir. Git is never run inside the working folder (the Cowork mount blocks `unlink`, which corrupts `.git`).
+3. **Sync** — `rsync` the working tree into the clone, excluding `node_modules/`, `.env*`, `.corrections.json`, `.roster.json`, crit data, and the deploy token.
+4. **Stamp** — writes `core/live/BUILD.json` with a unique `deployId` + timestamp.
+5. **Secret scan** — aborts before committing if any secret-shaped content or forbidden file is staged.
+6. **Push** — commits and pushes. **Railway auto-redeploys from the push** — no manual Railway step.
+7. **Verify** — polls the public `GET /version` endpoint until that exact `deployId` is live, then prints success. "Done" means *provably deployed*, not just pushed.
+
+Preview without shipping:
+
+```
+npm run deploy:dry -- "trying something"   # clone + sync + stamp + scan, no commit/push
+```
+
+### One-time Keychain setup (once, on your Mac)
+
+```
+security add-generic-password -a "$USER" -s critbot-deploy -w
+# paste your fine-grained PAT when prompted (Contents: read/write on the repo)
+```
+
+This is the **same PAT** Railway already uses as `CRITBOT_GH_TOKEN`, so revoke it only when you tear the deployment down — not between deploys. Nothing is written to disk; the Keychain hands it to the script at deploy time. (No-Keychain fallback: drop the PAT in `scripts/.deploy-token` — gitignored — or `export CRITBOT_DEPLOY_TOKEN=…`.)
+
+### Verify by hand
+
+```
+curl -s https://critbot-production.up.railway.app/version
+# → {"deployId":"20260609T…","deployedAt":"…","message":"…"}
+```
+
+`/version` is intentionally **public** (no password) and carries only a build id + timestamp.
+
+---
+
+## First-time / from-scratch setup
+
 The repo root has the two files Railway needs: `package.json` (`npm start` → `node core/live/relay.js`) and `railway.json` (start command + restart policy). Railway checks out the whole repo, so the relay's `../engine`, `../lens`, rubric libraries, and `fixtures/team-crits` are all present.
 
 > **Push first.** These changes (the password gate, root `package.json`, `railway.json`) must be on GitHub before Railway can build them. Push to `designisagoodidea-2026/critbot`.

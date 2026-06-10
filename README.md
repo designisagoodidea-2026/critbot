@@ -2,9 +2,11 @@
 
 A **crit-aware meeting-capture agent for design teams.** It joins a design critique call, transcribes and structures the conversation live, coaches the crit as it happens, and hands the designer a queue of transcript-traced, frame-anchored action items to work through next time they iterate.
 
-Capture is the center of gravity; the **rubric-library system** is the differentiator; the **action-item output is required** (without it, Critbot is just a better transcript). Figma is the v1 output surface.
-
 > **▶ Live demo:** **[critbot-production.up.railway.app](https://critbot-production.up.railway.app/)** — password-protected; request access from the maintainer.
+
+## v1 in one line
+
+Capture is the center of gravity; the **rubric-library system** is the differentiator; the **action-item output is required** (without it, Critbot is just a better transcript). Figma is the v1 output surface.
 
 ## Orientation
 

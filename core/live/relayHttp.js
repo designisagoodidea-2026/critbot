@@ -94,6 +94,17 @@ function sendJson(res, code, obj) { res.writeHead(code, { "Content-Type": "appli
 async function handle(req, res) {
   const url = req.url.split("?")[0];
 
+  // Public build stamp (NO auth gate) — lets the deploy script poll for the
+  // exact build that's live, so a deploy can be confirmed deterministically.
+  // Carries only a deploy id + timestamp, nothing sensitive.
+  if (url === "/version" || url === "/api/version") {
+    let build = { deployId: "unknown" };
+    try { build = JSON.parse(fs.readFileSync(path.join(__dirname, "BUILD.json"), "utf8")); } catch (_) {}
+    res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+    res.end(JSON.stringify(build));
+    return true;
+  }
+
   if (!authOk(req)) { res.writeHead(401, { "WWW-Authenticate": 'Basic realm="Critbot"', "Content-Type": "text/plain" }); res.end("Critbot — password required"); return true; }
 
   if (url === "/api/health") return sendJson(res, 200, { llm: llmOn() }), true;

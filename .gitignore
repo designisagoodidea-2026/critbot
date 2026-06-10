@@ -12,6 +12,8 @@ figma-plugin/code.js.map
 # ...but keep the safe template committable
 !.env.example
 *.local
+# Deploy token fallback (preferred store is the macOS Keychain — see scripts/deploy.sh)
+scripts/.deploy-token
 
 # OS / editor
 .DS_Store

@@ -5,7 +5,9 @@
   "description": "Critbot — crit-aware meeting capture. The hosted entrypoint runs the live relay (Deepgram + the Screen 1/2 app + the team crit store).",
   "scripts": {
     "start": "node core/live/relay.js",
-    "test": "node core/test.js"
+    "test": "node core/test.js",
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:dry": "bash scripts/deploy.sh --dry-run"
   },
   "dependencies": {
     "ws": "^8.18.0"

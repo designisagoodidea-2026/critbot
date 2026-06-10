@@ -392,10 +392,19 @@ function sendAudio(float32, sr) {
 // fallback for older browsers. The worklet is loaded via a Blob URL so there's
 // no separate served file to cache.
 async function startAudio() {
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // audioCtx is normally created + unlocked in the click handler (iOS WebKit
+  // requires that to happen synchronously inside the user gesture). Fall back to
+  // creating it here for any non-gesture caller.
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   try { await audioCtx.resume(); } catch (_) {}
   source = audioCtx.createMediaStreamSource(stream);
   const sr = audioCtx.sampleRate;
+  // WebKit (all iOS browsers, incl. Brave) only runs graph nodes that have a path
+  // to destination. Route capture through a muted gain so the worklet's process()
+  // / onaudioprocess actually fires — gain 0 means no mic-to-speaker feedback.
+  const sink = audioCtx.createGain();
+  sink.gain.value = 0;
+  sink.connect(audioCtx.destination);
   try {
     const code = `
       class PCMWorklet extends AudioWorkletProcessor {
@@ -414,12 +423,13 @@ async function startAudio() {
     workletNode = new AudioWorkletNode(audioCtx, "pcm-worklet");
     workletNode.port.onmessage = (e) => sendAudio(e.data, sr);
     source.connect(workletNode);
+    workletNode.connect(sink); // pull the worklet via the muted sink (WebKit)
     console.log("[critbot] capture: AudioWorklet @", sr, "Hz");
   } catch (err) {
     console.warn("[critbot] AudioWorklet unavailable — ScriptProcessor fallback", err);
     processor = audioCtx.createScriptProcessor(4096, 1, 1);
     processor.onaudioprocess = (e) => sendAudio(e.inputBuffer.getChannelData(0), sr);
-    source.connect(processor); processor.connect(audioCtx.destination);
+    source.connect(processor); processor.connect(sink); // muted sink, not destination directly
   }
   return audioCtx.state;
 }
@@ -588,6 +598,13 @@ $("rec").onclick = async () => {
   if (on) {
     if (!joining) activeEvent = null; // manual Start = no calendar event attached
     joining = false;
+    // iOS WebKit: the AudioContext must be created AND resumed synchronously
+    // inside this user-gesture handler — before any await (getUserMedia's prompt
+    // breaks the gesture chain). Created here, reused by startAudio().
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioCtx.resume();
+    } catch (_) {}
     try { await start(); renderUpcoming(); } catch (e) { setStatus("mic error: " + e.message); on = false; $("rec").classList.remove("on"); $("rec").textContent = "● Start"; }
   } else { stop(); renderUpcoming(); }
 };
