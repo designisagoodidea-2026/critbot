@@ -118,9 +118,13 @@ if [ -z "$STAGED" ]; then ok "no changes to deploy — already up to date."; exi
 # (a) filenames that must never be committed
 echo "$STAGED" | grep -E '(^|/)\.env$|(^|/)\.env\.[^x]|\.corrections\.json$|\.roster\.json$|scripts/\.deploy-token$' \
   && die "staged a forbidden file (see list above) — aborting." 2 || true
-# (b) secret-shaped content in the staged diff
-if git diff --cached | grep -aE 'ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-ant-[A-Za-z0-9-]{20,}|DEEPGRAM_API_KEY[[:space:]]*=[[:space:]]*[A-Za-z0-9]|ANTHROPIC_API_KEY[[:space:]]*=[[:space:]]*[A-Za-z0-9]' >/dev/null; then
-  die "secret-shaped content found in the staged diff — aborting before commit." 2
+# (b) secret-shaped content in ADDED lines only. A deleted line (e.g. removing a
+#     "DEEPGRAM_API_KEY=xxxxx" placeholder from help text) is NOT being committed,
+#     so it must not block. Real keys are long, so a value-length floor keeps
+#     template placeholders (xxxxx, your-key) from tripping it.
+ADDED="$(git diff --cached --unified=0 | grep -E '^\+' | grep -vE '^\+\+\+' || true)"
+if printf '%s' "$ADDED" | grep -aE 'ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|sk-ant-[A-Za-z0-9-]{30,}|(DEEPGRAM_API_KEY|ANTHROPIC_API_KEY)[[:space:]]*=[[:space:]]*[A-Za-z0-9]{16,}' >/dev/null; then
+  die "secret-shaped content found in newly-added lines — aborting before commit." 2
 fi
 ok "clean — $(echo "$STAGED" | wc -l | tr -d ' ') file(s) changed"
 

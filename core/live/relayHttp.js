@@ -8,6 +8,8 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+const urlmod = require("url");
 const llm = require("../engine/llmProvider");
 const critRecord = require("../engine/critRecord");
 const calendar = require("../engine/calendar");
@@ -27,6 +29,36 @@ function authOk(req) {
   if (h.indexOf("Basic ") !== 0) return false;
   const dec = Buffer.from(h.slice(6), "base64").toString("utf8");
   return dec.slice(dec.indexOf(":") + 1) === pass;
+}
+
+// --- WebSocket auth tickets (iOS WebKit fix) ---------------------------------
+// WebKit (Safari / iOS Brave) does NOT attach Basic-auth credentials to a
+// WebSocket upgrade, so a gated /ws handshake is rejected even though the page
+// loaded fine. Workaround: the (already-authed) page fetches a short-lived,
+// single-use ticket over normal HTTPS — which WebKit *does* authenticate — and
+// passes it in the /ws URL. Desktop browsers keep working via the Basic header;
+// the ticket is just an additional accepted credential.
+const WS_TICKETS = new Map(); // token -> expiry(ms)
+const WS_TICKET_TTL = 120000; // 2 min — plenty to open the socket
+function mintWsTicket() {
+  const t = crypto.randomBytes(18).toString("hex");
+  WS_TICKETS.set(t, Date.now() + WS_TICKET_TTL);
+  if (WS_TICKETS.size > 500) { const now = Date.now(); for (const [k, v] of WS_TICKETS) if (v < now) WS_TICKETS.delete(k); }
+  return t;
+}
+function consumeWsTicket(t) {
+  if (!t) return false;
+  const exp = WS_TICKETS.get(t);
+  WS_TICKETS.delete(t); // single-use
+  return !!exp && exp >= Date.now();
+}
+// Verifier for the WS upgrade: Basic header (desktop) OR a valid ticket (iOS).
+function wsVerify(req) {
+  if (authOk(req)) return true;
+  try {
+    const q = urlmod.parse(req.url || "", true).query || {};
+    return consumeWsTicket(q.ticket);
+  } catch (_) { return false; }
 }
 
 function loadEnv() {
@@ -106,6 +138,14 @@ async function handle(req, res) {
   }
 
   if (!authOk(req)) { res.writeHead(401, { "WWW-Authenticate": 'Basic realm="Critbot"', "Content-Type": "text/plain" }); res.end("Critbot — password required"); return true; }
+
+  // Past the gate ⇒ authed. Mint a single-use ticket the page can hand to the
+  // /ws upgrade (WebKit won't carry the Basic header onto the socket). No-store.
+  if (url === "/api/ws-ticket") {
+    res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+    res.end(JSON.stringify({ ticket: mintWsTicket() }));
+    return true;
+  }
 
   if (url === "/api/health") return sendJson(res, 200, { llm: llmOn() }), true;
 
@@ -223,4 +263,4 @@ async function handle(req, res) {
   return true;
 }
 
-module.exports = { loadEnv, handle, llmOn, authOk, ROOT };
+module.exports = { loadEnv, handle, llmOn, authOk, wsVerify, ROOT };

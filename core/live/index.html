@@ -330,8 +330,18 @@ let userStopped = false, reconnectAttempts = 0;
 const MAX_RECONNECT = 6;
 
 // --- WebSocket lifecycle, with auto-reconnect on a dropped relay connection ---
-function connectWS() {
-  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+async function connectWS() {
+  // iOS WebKit (Safari / iPhone Brave) does NOT attach the Basic-auth header to a
+  // WebSocket upgrade, so a password-gated /ws is rejected and the page loops
+  // "connection dropped". Fetch a short-lived ticket over normal HTTPS (which
+  // WebKit *does* authenticate) and pass it in the URL. Desktop still works via
+  // the Basic header even if this fetch is a no-op.
+  let q = "";
+  try {
+    const r = await fetch("/api/ws-ticket", { cache: "no-store" });
+    if (r.ok) { const j = await r.json(); if (j && j.ticket) q = "?ticket=" + encodeURIComponent(j.ticket); }
+  } catch (_) {}
+  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws" + q);
   ws.binaryType = "arraybuffer";
   ws.onmessage = handleWsMessage;
   ws.onopen = () => { reconnectAttempts = 0; };

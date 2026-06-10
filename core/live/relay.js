@@ -27,9 +27,17 @@ function createRelayServer(opts) {
   const KEY = opts.deepgramKey || process.env.DEEPGRAM_API_KEY;
   const LLM_ON = relayHttp.llmOn();
   const server = http.createServer((req, res) => { relayHttp.handle(req, res); });
-  const wss = new WebSocket.Server({ server, path: "/ws", verifyClient: (info) => relayHttp.authOk(info.req) });
+  const wss = new WebSocket.Server({ server, path: "/ws", verifyClient: (info) => relayHttp.wsVerify(info.req) });
 
   wss.on("connection", (browser) => {
+    if (!KEY) {
+      // ASR not configured. Don't crash — keep the socket open and tell the page,
+      // so the UI shows a clear "not configured" message instead of dropping.
+      console.log("• browser connected, but ASR is DISABLED (no DEEPGRAM_API_KEY) — sending status");
+      try { browser.send(JSON.stringify({ type: "status", state: "error", message: "transcription is not configured on the server (DEEPGRAM_API_KEY missing)" })); } catch (_) {}
+      browser.on("message", () => {}); // drain audio frames; nowhere to send them
+      return;
+    }
     console.log("• browser connected — opening Deepgram stream");
     const dg = new WebSocket(DG_URL, { headers: { Authorization: "Token " + KEY } });
     const keepAlive = setInterval(() => {
@@ -81,17 +89,22 @@ if (require.main === module) {
   const KEY = process.env.DEEPGRAM_API_KEY;
   const PORT = process.env.PORT || 8787;
   if (!KEY) {
-    console.error("\n  ✗ DEEPGRAM_API_KEY is not set.");
+    // Was process.exit(1) — but on a hosted always-on deploy that crash-loops the
+    // WHOLE service (page, /version, team-crits store) over one missing key. Warn
+    // loudly and start anyway; transcription is disabled until the key is set, and
+    // the page surfaces that. Re-add DEEPGRAM_API_KEY in the host's env to enable.
+    console.error("\n  ✗ DEEPGRAM_API_KEY is not set — starting WITHOUT live transcription.");
+    console.error("    The page, /version, and the team-crit store stay up; the mic just won't transcribe.");
     const stray = [".env.txt", ".env.rtf", "env", ".env "].find((n) => fs.existsSync(path.join(__dirname, n)));
-    if (stray) { console.error(`    Found a file named "${stray}" — it should be exactly ".env".`); console.error(`    Rename it:  mv "${stray}" .env\n`); }
-    else { console.error("    Set it in core/live/.env (see .env.example) or pass it inline:"); console.error("    DEEPGRAM_API_KEY=xxxxx node relay.js\n"); }
-    process.exit(1);
+    if (stray) { console.error(`    (Found a file named "${stray}" — it should be exactly ".env": mv "${stray}" .env)`); }
+    else { console.error("    Set it in core/live/.env (see .env.example), or as a host env var (Railway → Variables).\n"); }
   }
-  const { server, llmOn } = createRelayServer();
+  const { server, llmOn, hasKey } = createRelayServer();
+  console.log(hasKey ? "  • ASR: Deepgram key loaded" : "  • ASR: DISABLED (no DEEPGRAM_API_KEY) — transcription off until it's set");
   console.log(llmOn ? "  • LLM intelligence: ON (Anthropic key found)" : "  • LLM intelligence: OFF (no ANTHROPIC_API_KEY) — page falls back to heuristic");
   server.listen(PORT, () => {
     console.log(`\n  Critbot live relay running (Deepgram)`);
     console.log(`  → open  http://localhost:${PORT}/live/`);
-    console.log(`  → Deepgram key loaded (${KEY.slice(0, 4)}…), diarize=true, model=nova-3\n`);
+    console.log(hasKey ? `  → Deepgram key loaded (${KEY.slice(0, 4)}…), diarize=true, model=nova-3\n` : `  → Deepgram key MISSING — set DEEPGRAM_API_KEY to enable transcription\n`);
   });
 }
