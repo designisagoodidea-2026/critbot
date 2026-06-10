@@ -92,13 +92,23 @@
        scorecard/coaching panel below always peeks in. Newest line auto-pins
        (see tr.scrollTop = tr.scrollHeight in render). */
     #transcript { height: 46vh; max-height: 46vh; }
+
+    /* While recording, collapse the header down to JUST the Stop button, so the
+       headline, "listening…" status, Team Crits, Settings and Save crit all leave
+       the viewport and the transcript owns the screen. They return on Stop. */
+    body.recording #titlebar,
+    body.recording .controls > a,
+    body.recording #settings-btn,
+    body.recording #save { display: none; }
+    body.recording header { gap: 0; padding-top: 10px; padding-bottom: 10px; }
+    body.recording .panel-transcript { scroll-margin-top: 64px; }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div><h1>Live Critique</h1><div class="status" id="status">idle — press Start and grant mic access</div></div>
+    <div id="titlebar"><h1>Live Critique</h1><div class="status" id="status">idle — press Start and grant mic access</div></div>
     <div class="controls">
       <a href="/live/sessions.html" class="status" style="color:#6aa3f0;text-decoration:none">Team Crits →</a>
       <button id="settings-btn" title="Settings">⚙ Settings</button>
@@ -637,6 +647,7 @@ $("rec").onclick = async () => {
   on = !on;
   $("rec").classList.toggle("on", on);
   $("rec").textContent = on ? "■ Stop" : "● Start";
+  document.body.classList.toggle("recording", on); // collapse header to Stop-only on mobile
   if (on) {
     if (!joining) activeEvent = null; // manual Start = no calendar event attached
     joining = false;
@@ -658,7 +669,7 @@ $("rec").onclick = async () => {
           window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
         }, 80);
       }
-    } catch (e) { setStatus("mic error: " + e.message); on = false; $("rec").classList.remove("on"); $("rec").textContent = "● Start"; }
+    } catch (e) { setStatus("mic error: " + e.message); on = false; $("rec").classList.remove("on"); $("rec").textContent = "● Start"; document.body.classList.remove("recording"); }
   } else { stop(); renderUpcoming(); }
 };
 </script>
