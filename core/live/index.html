@@ -67,11 +67,18 @@
     /* Flex column lets us reorder: bring the live transcript onto the first
        screen, above the taller scorecard/coaching panel. */
     .wrap { display: flex; flex-direction: column; padding: 14px; }
-    header            { order: 1; flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 14px; }
+    /* Header sticks to the top so Start/Stop + Save crit stay reachable while the
+       page is scrolled down to the transcript. Full-bleed (negative margins undo
+       the wrap padding) so scrolled content doesn't show through the side gaps. */
+    header {
+      order: 1; flex-direction: column; align-items: stretch; gap: 10px;
+      position: sticky; top: 0; z-index: 10; background: #0f1115;
+      margin: -14px -14px 12px; padding: 12px 14px; border-bottom: 1px solid #232838;
+    }
     #settings         { order: 2; }
     #upcoming         { order: 3; }
-    .panel-transcript { order: 4; }   /* ← transcript now sits above… */
-    .panel-quality    { order: 5; }   /*    …the scorecard + coaching   */
+    .panel-transcript { order: 4; scroll-margin-top: 96px; }  /* ← transcript above… */
+    .panel-quality    { order: 5; }                            /*    …scorecard+coaching */
 
     h1 { font-size: 22px; }
     .controls { flex-wrap: wrap; gap: 8px; }
@@ -79,8 +86,12 @@
     button, select { padding: 11px 14px; font-size: 14px; }
     button.rec { min-width: 96px; }
 
+    .panel { padding: 12px; margin-bottom: 12px; }     /* tighten */
     .score { grid-template-columns: repeat(2, 1fr); }  /* 4 cramped cols → 2 */
-    #transcript { max-height: 52vh; }                   /* show a real chunk of speech */
+    /* Fixed, internally-scrolling transcript. Capped below viewport height so the
+       scorecard/coaching panel below always peeks in. Newest line auto-pins
+       (see tr.scrollTop = tr.scrollHeight in render). */
+    #transcript { height: 46vh; max-height: 46vh; }
   }
 </style>
 </head>
@@ -636,7 +647,18 @@ $("rec").onclick = async () => {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       audioCtx.resume();
     } catch (_) {}
-    try { await start(); renderUpcoming(); } catch (e) { setStatus("mic error: " + e.message); on = false; $("rec").classList.remove("on"); $("rec").textContent = "● Start"; }
+    try {
+      await start(); renderUpcoming();
+      // On phones, drop the page to the live transcript so it (plus a peek of the
+      // scorecard below) fills the screen, rather than leaving the controls on top.
+      if (window.matchMedia("(max-width: 640px)").matches) {
+        const tp = document.querySelector(".panel-transcript"), hd = document.querySelector("header");
+        if (tp) setTimeout(() => {
+          const y = tp.getBoundingClientRect().top + window.scrollY - (hd ? hd.offsetHeight : 0) - 8;
+          window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+        }, 80);
+      }
+    } catch (e) { setStatus("mic error: " + e.message); on = false; $("rec").classList.remove("on"); $("rec").textContent = "● Start"; }
   } else { stop(); renderUpcoming(); }
 };
 </script>

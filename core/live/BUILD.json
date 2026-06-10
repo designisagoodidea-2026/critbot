@@ -1,5 +1,5 @@
 {
-  "deployId": "20260610T043928Z-d02d5f",
-  "deployedAt": "2026-06-10T04:39:28Z",
-  "message": "responsive mobile layout: transcript-first, 2-col scorecard"
+  "deployId": "20260610T044640Z-195b91",
+  "deployedAt": "2026-06-10T04:46:40Z",
+  "message": "mobile: sticky header, auto-scroll to transcript on start, fixed-height transcript"
 }
